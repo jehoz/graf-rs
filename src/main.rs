@@ -5,26 +5,13 @@ use macroquad::{
     ui::{hash, root_ui},
 };
 
+mod devices;
+
 #[derive(Eq, Hash, PartialEq)]
 struct NodeId(u32);
 
 struct CircuitNode {
     pos: Vec2,
-}
-
-enum Device {
-    Pulsar(Pulsar),
-    Gate(Gate),
-}
-
-struct Pulsar {
-    frequency: f32,
-    duty_cycle: f32,
-}
-
-struct Gate {
-    inputs: HashSet<NodeId>,
-    // glyph: Glyph,
 }
 
 const NODE_SIZE: f32 = 50.0;
