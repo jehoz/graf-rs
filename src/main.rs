@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use macroquad::prelude::*;
 
@@ -7,6 +7,21 @@ struct NodeId(u32);
 
 struct CircuitNode {
     pos: Vec2,
+}
+
+enum Device {
+    Pulsar(Pulsar),
+    Gate(Gate),
+}
+
+struct Pulsar {
+    frequency: f32,
+    duty_cycle: f32,
+}
+
+struct Gate {
+    inputs: HashSet<NodeId>,
+    // glyph: Glyph,
 }
 
 const NODE_SIZE: f32 = 50.0;
