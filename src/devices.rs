@@ -4,6 +4,20 @@ pub enum Device {
     Note(NoteDevice),
 }
 
+impl Device {
+    pub fn clock() -> Self {
+        Device::Clock(ClockDevice::default())
+    }
+
+    pub fn gate() -> Self {
+        Device::Gate(GateDevice::default())
+    }
+
+    pub fn note() -> Self {
+        Device::Note(NoteDevice::default())
+    }
+}
+
 pub struct ClockDevice {
     frequency: Frequency,
     duty_cycle: f32,
