@@ -5,8 +5,9 @@ enum Device {
 }
 
 struct ClockDevice {
-    frequency: f32,
+    frequency: Frequency,
     duty_cycle: f32,
+    offset: f32,
 }
 
 struct GateDevice {
@@ -26,4 +27,14 @@ enum BooleanOperation {
     NAND,
     NOR,
     XNOR,
+}
+
+enum Frequency {
+    Milliseconds(f32),
+    Beats(BeatFraction),
+}
+
+struct BeatFraction {
+    numerator: u16,
+    denominator: u16,
 }
