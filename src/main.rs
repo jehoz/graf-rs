@@ -1,27 +1,18 @@
-use std::collections::{HashMap, HashSet};
-
 use macroquad::{
     prelude::*,
     ui::{hash, root_ui},
 };
+use session::Session;
 
 mod devices;
-
-#[derive(Eq, Hash, PartialEq)]
-struct NodeId(u32);
-
-struct CircuitNode {
-    pos: Vec2,
-}
+mod session;
 
 const NODE_SIZE: f32 = 50.0;
 const HALF_NODE_SIZE: f32 = NODE_SIZE / 2.0;
 
 #[macroquad::main("GRAF")]
 async fn main() {
-    let mut node_id_counter: u32 = 0;
-    let mut nodes: HashMap<NodeId, CircuitNode> = HashMap::new();
-
+    let session = Session::new();
     let mut context_menu_position: Option<Vec2> = None;
 
     loop {
@@ -36,10 +27,10 @@ async fn main() {
             WHITE,
         );
 
-        for (_node_id, node) in nodes.iter() {
+        for (_node_id, node) in session.nodes.iter() {
             draw_rectangle_lines(
-                node.pos.x - HALF_NODE_SIZE,
-                node.pos.y - HALF_NODE_SIZE,
+                node.position.x - HALF_NODE_SIZE,
+                node.position.y - HALF_NODE_SIZE,
                 NODE_SIZE,
                 NODE_SIZE,
                 2.0,
