@@ -1,26 +1,26 @@
-enum Device {
+pub enum Device {
     Clock(ClockDevice),
     Gate(GateDevice),
     Note(NoteDevice),
 }
 
-struct ClockDevice {
+pub struct ClockDevice {
     frequency: Frequency,
     duty_cycle: f32,
     offset: f32,
 }
 
-struct GateDevice {
+pub struct GateDevice {
     operation: BooleanOperation,
 }
 
-struct NoteDevice {
+pub struct NoteDevice {
     midi_note: u8,
     velocity: u8,
     is_on: bool,
 }
 
-enum BooleanOperation {
+pub enum BooleanOperation {
     AND,
     OR,
     XOR,
@@ -29,12 +29,12 @@ enum BooleanOperation {
     XNOR,
 }
 
-enum Frequency {
+pub enum Frequency {
     Milliseconds(f32),
     Beats(BeatFraction),
 }
 
-struct BeatFraction {
+pub struct BeatFraction {
     numerator: u16,
     denominator: u16,
 }
