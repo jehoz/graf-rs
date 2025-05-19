@@ -4,6 +4,7 @@ use macroquad::{
 };
 use session::Session;
 
+mod dag;
 mod devices;
 mod session;
 
