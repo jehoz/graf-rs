@@ -15,7 +15,7 @@ pub struct Node {
 pub struct Session {
     node_id_counter: u32,
     pub nodes: HashMap<NodeId, Node>,
-    pub wires: Dag<NodeId>,
+    wires: Dag<NodeId>,
 }
 
 impl Session {
@@ -25,5 +25,11 @@ impl Session {
             nodes: HashMap::new(),
             wires: Dag::new(),
         }
+    }
+
+    pub fn add_node(&mut self, position: Vec2, device: Device) {
+        self.nodes
+            .insert(NodeId(self.node_id_counter), Node { position, device });
+        self.node_id_counter += 1;
     }
 }

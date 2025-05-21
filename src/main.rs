@@ -1,3 +1,4 @@
+use devices::{ClockDevice, Device, GateDevice, NoteDevice};
 use macroquad::{
     prelude::*,
     ui::{hash, root_ui},
@@ -13,7 +14,7 @@ const HALF_NODE_SIZE: f32 = NODE_SIZE / 2.0;
 
 #[macroquad::main("GRAF")]
 async fn main() {
-    let session = Session::new();
+    let mut session = Session::new();
     let mut context_menu_position: Option<Vec2> = None;
 
     loop {
@@ -54,12 +55,15 @@ async fn main() {
         if let Some(pos) = context_menu_position {
             root_ui().window(hash!(), pos, vec2(50., 90.), |ui| {
                 if ui.button(None, "Clock") {
+                    session.add_node(pos, Device::Clock(ClockDevice::default()));
                     context_menu_position = None;
                 }
                 if ui.button(None, "Gate") {
+                    session.add_node(pos, Device::Gate(GateDevice::default()));
                     context_menu_position = None;
                 }
                 if ui.button(None, "Note") {
+                    session.add_node(pos, Device::Note(NoteDevice::default()));
                     context_menu_position = None;
                 }
             });
