@@ -4,7 +4,7 @@ use macroquad::math::Vec2;
 
 use crate::{dag::Dag, devices::Device};
 
-#[derive(Eq, Hash, PartialEq)]
+#[derive(Eq, Hash, PartialEq, Clone, Copy)]
 pub struct NodeId(u32);
 
 pub struct Node {
