@@ -55,15 +55,15 @@ async fn main() {
         if let Some(pos) = context_menu_position {
             root_ui().window(hash!(), pos, vec2(50., 90.), |ui| {
                 if ui.button(None, "Clock") {
-                    session.add_node(pos, Device::Clock(ClockDevice::default()));
+                    session.create_clock(pos);
                     context_menu_position = None;
                 }
                 if ui.button(None, "Gate") {
-                    session.add_node(pos, Device::Gate(GateDevice::default()));
+                    session.create_gate(pos);
                     context_menu_position = None;
                 }
                 if ui.button(None, "Note") {
-                    session.add_node(pos, Device::Note(NoteDevice::default()));
+                    session.create_note(pos);
                     context_menu_position = None;
                 }
             });
