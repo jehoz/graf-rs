@@ -13,6 +13,8 @@ pub struct Dag<T> {
     // maybe replace the hashmaps with some kind of vec arena if performance is a problem
     vertices: HashMap<VertexId, T>,
     edges: HashMap<VertexId, HashSet<VertexId>>,
+
+    sources: Vec<VertexId>,
     transitive_closure: HashMap<VertexId, HashSet<VertexId>>,
 }
 
@@ -22,6 +24,9 @@ impl<T> Dag<T> {
             id_counter: 0,
             vertices: HashMap::new(),
             edges: HashMap::new(),
+
+            sources: Vec::new(),
+
             transitive_closure: HashMap::new(),
         }
     }
@@ -75,5 +80,47 @@ impl<T> Dag<T> {
 
     fn recompute_closure(&mut self) {
         todo!()
+    }
+
+    fn topological_order(&self) -> Vec<VertexId> {
+        // count incoming edges to each vertex
+        let mut outgoing = HashMap::new();
+        for vid in self.vertices.keys() {
+            outgoing.insert(vid.to_owned(), 0);
+        }
+        for children in self.edges.values() {
+            for vid in children {
+                outgoing[vid] += 1;
+            }
+        }
+
+        // maintain set of all vertices with no incoming edges (source vertices)
+        let mut sources = HashSet::new();
+        for (vid, count) in outgoing.iter() {
+            if *count == 0 {
+                sources.insert(vid.to_owned());
+            }
+        }
+
+        let mut topo = Vec::with_capacity(self.vertices.len());
+        while !sources.is_empty() {
+            // pop some vertex with no incoming edges
+            let v = sources.iter().next().unwrap().clone();
+            sources.remove(&v);
+
+            // make it next in the topological ordering
+            topo.push(v);
+
+            // remove outgoing edges from that vertex, and add any new sources
+            for w in self.edges.get(&v).unwrap() {
+                outgoing[w] -= 1;
+
+                if outgoing[w] == 0 {
+                    sources.insert(w.to_owned());
+                }
+            }
+        }
+
+        return topo;
     }
 }
