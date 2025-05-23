@@ -32,6 +32,12 @@ impl<T> Dag<T> {
         }
     }
 
+    pub fn vertices(&self) -> Vertices<T> {
+        Vertices {
+            inner: self.vertices.iter(),
+        }
+    }
+
     pub fn contains_vertex(&self, v: &VertexId) -> bool {
         self.vertices.contains_key(v)
     }
@@ -140,5 +146,17 @@ impl<T> Dag<T> {
         }
 
         return topo;
+    }
+}
+
+struct Vertices<'a, T> {
+    inner: std::collections::hash_map::Iter<'a, VertexId, T>,
+}
+
+impl<'a, T> Iterator for Vertices<'a, T> {
+    type Item = (&'a VertexId, &'a T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next()
     }
 }

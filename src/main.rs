@@ -29,7 +29,7 @@ async fn main() {
             WHITE,
         );
 
-        for (_node_id, node) in session.nodes.iter() {
+        for (_node_id, node) in session.nodes.vertices() {
             draw_rectangle_lines(
                 node.position.x - HALF_NODE_SIZE,
                 node.position.y - HALF_NODE_SIZE,

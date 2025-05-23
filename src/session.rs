@@ -11,7 +11,7 @@ pub struct Node {
 }
 
 pub struct Session {
-    nodes: Dag<Node>,
+    pub nodes: Dag<Node>,
 }
 
 impl Session {
