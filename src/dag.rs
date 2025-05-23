@@ -3,19 +3,21 @@ use std::{
     hash::Hash,
 };
 
-#[derive(Eq, Hash, PartialEq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash)]
 pub struct VertexId(u32);
+
+#[derive(PartialEq, Eq, Clone, Copy, Hash)]
+pub struct Edge(VertexId, VertexId);
 
 pub struct IllegalEdgeError;
 
 pub struct Dag<T> {
     id_counter: u32,
-    // maybe replace the hashmaps with some kind of vec arena if performance is a problem
     vertices: HashMap<VertexId, T>,
-    edges: HashMap<VertexId, HashSet<VertexId>>,
+    edges: Vec<Edge>,
 
-    sources: Vec<VertexId>,
-    transitive_closure: HashMap<VertexId, HashSet<VertexId>>,
+    transitive_closure: Vec<Edge>,
+    topological_order: Vec<VertexId>,
 }
 
 impl<T> Dag<T> {
@@ -23,11 +25,10 @@ impl<T> Dag<T> {
         Dag {
             id_counter: 0,
             vertices: HashMap::new(),
-            edges: HashMap::new(),
+            edges: Vec::new(),
 
-            sources: Vec::new(),
-
-            transitive_closure: HashMap::new(),
+            transitive_closure: Vec::new(),
+            topological_order: Vec::new(),
         }
     }
 
@@ -36,25 +37,20 @@ impl<T> Dag<T> {
     }
 
     pub fn contains_edge(&self, from: &VertexId, to: &VertexId) -> bool {
-        match self.edges.get(from) {
-            Some(children) => children.contains(to),
-            None => false,
-        }
+        self.edges.contains(&Edge(*from, *to))
     }
 
-    pub fn contains_path(&self, from: &VertexId, to: &VertexId) -> bool {
-        match self.transitive_closure.get(from) {
-            Some(children) => children.contains(to),
-            None => false,
-        }
+    pub fn is_reachable(&self, from: &VertexId, to: &VertexId) -> bool {
+        self.transitive_closure.contains(&Edge(*from, *to))
     }
 
     pub fn add_vertex(&mut self, body: T) -> VertexId {
         let id = VertexId(self.id_counter);
         self.id_counter += 1;
         self.vertices.insert(id, body);
-        self.edges.insert(id, HashSet::new());
-        self.transitive_closure.insert(id, HashSet::new());
+
+        // a new vertex can go anywhere in the topo order
+        self.topological_order.push(id);
 
         return id;
     }
@@ -62,41 +58,61 @@ impl<T> Dag<T> {
     pub fn add_edge(&mut self, from: &VertexId, to: &VertexId) -> Result<(), IllegalEdgeError> {
         if self.contains_edge(&from, &to) {
             return Ok(());
-        } else if self.contains_path(&to, &from) {
+        } else if self.is_reachable(&to, &from) {
+            // edge would create cycle
             return Err(IllegalEdgeError);
+        } else if self.contains_vertex(from) && self.contains_vertex(to) {
+            self.edges.push(Edge(*from, *to));
+            self.recompute_closure();
+            return Ok(());
         } else {
-            match self.edges.get_mut(&from) {
-                Some(children) => {
-                    children.insert(*to);
-                    self.recompute_closure();
-                    return Ok(());
-                }
-                None => {
-                    return Err(IllegalEdgeError);
-                }
-            }
+            return Err(IllegalEdgeError);
         }
     }
 
     fn recompute_closure(&mut self) {
-        todo!()
+        self.topological_order = self.topological_order();
+        self.transitive_closure = self.transitive_closure();
+    }
+
+    fn transitive_closure(&self) -> Vec<Edge> {
+        // initialize closure as adjacency map
+        let mut closure = HashMap::new();
+        for v in self.topological_order.iter() {
+            closure.insert(*v, HashSet::new());
+        }
+
+        // iterate backwards and accumulate closures from children to parents
+        for v in self.topological_order.iter().rev() {
+            closure[v].insert(*v);
+
+            for Edge(from, to) in self.edges {
+                if *v == to {
+                    closure[&from].extend(closure[v]);
+                }
+            }
+        }
+
+        // convert from adjacency map to edge list
+        closure
+            .iter()
+            .flat_map(|(v, ws)| ws.iter().map(|w| Edge(*v, *w)))
+            .collect()
     }
 
     fn topological_order(&self) -> Vec<VertexId> {
         // count incoming edges to each vertex
-        let mut outgoing = HashMap::new();
+        let mut incoming = HashMap::new();
         for vid in self.vertices.keys() {
-            outgoing.insert(vid.to_owned(), 0);
+            incoming.insert(vid.to_owned(), 0);
         }
-        for children in self.edges.values() {
-            for vid in children {
-                outgoing[vid] += 1;
-            }
+        for Edge(from, to) in self.edges.iter() {
+            incoming[to] += 1;
         }
 
         // maintain set of all vertices with no incoming edges (source vertices)
         let mut sources = HashSet::new();
-        for (vid, count) in outgoing.iter() {
+        for (vid, count) in incoming.iter() {
             if *count == 0 {
                 sources.insert(vid.to_owned());
             }
@@ -112,11 +128,13 @@ impl<T> Dag<T> {
             topo.push(v);
 
             // remove outgoing edges from that vertex, and add any new sources
-            for w in self.edges.get(&v).unwrap() {
-                outgoing[w] -= 1;
+            for Edge(from, to) in self.edges.iter() {
+                if *from == v {
+                    incoming[to] -= 1;
 
-                if outgoing[w] == 0 {
-                    sources.insert(w.to_owned());
+                    if incoming[to] == 0 {
+                        sources.insert(to.to_owned());
+                    }
                 }
             }
         }
