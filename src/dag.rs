@@ -38,6 +38,12 @@ impl<T> Dag<T> {
         }
     }
 
+    pub fn edges(&self) -> Edges {
+        Edges {
+            inner: self.edges.iter(),
+        }
+    }
+
     pub fn contains_vertex(&self, v: &VertexId) -> bool {
         self.vertices.contains_key(v)
     }
@@ -90,11 +96,12 @@ impl<T> Dag<T> {
 
         // iterate backwards and accumulate closures from children to parents
         for v in self.topological_order.iter().rev() {
-            closure[v].insert(*v);
+            closure.get_mut(v).unwrap().insert(*v);
+            let v_reachable = closure[v].clone();
 
-            for Edge(from, to) in self.edges {
-                if *v == to {
-                    closure[&from].extend(closure[v]);
+            for Edge(from, to) in self.edges.iter() {
+                if *v == *to {
+                    closure.get_mut(&from).unwrap().extend(v_reachable.clone());
                 }
             }
         }
@@ -112,8 +119,8 @@ impl<T> Dag<T> {
         for vid in self.vertices.keys() {
             incoming.insert(vid.to_owned(), 0);
         }
-        for Edge(from, to) in self.edges.iter() {
-            incoming[to] += 1;
+        for Edge(_from, to) in self.edges.iter() {
+            *incoming.get_mut(to).unwrap() += 1;
         }
 
         // maintain set of all vertices with no incoming edges (source vertices)
@@ -136,7 +143,7 @@ impl<T> Dag<T> {
             // remove outgoing edges from that vertex, and add any new sources
             for Edge(from, to) in self.edges.iter() {
                 if *from == v {
-                    incoming[to] -= 1;
+                    *incoming.get_mut(to).unwrap() -= 1;
 
                     if incoming[to] == 0 {
                         sources.insert(to.to_owned());
@@ -149,12 +156,24 @@ impl<T> Dag<T> {
     }
 }
 
-struct Vertices<'a, T> {
+pub struct Vertices<'a, T> {
     inner: std::collections::hash_map::Iter<'a, VertexId, T>,
 }
 
 impl<'a, T> Iterator for Vertices<'a, T> {
     type Item = (&'a VertexId, &'a T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next()
+    }
+}
+
+pub struct Edges<'a> {
+    inner: std::slice::Iter<'a, Edge>,
+}
+
+impl<'a> Iterator for Edges<'a> {
+    type Item = &'a Edge;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next()
