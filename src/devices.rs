@@ -1,8 +1,20 @@
-use macroquad::math::Vec2;
+use macroquad::{
+    color::WHITE,
+    math::Vec2,
+    shapes::{draw_circle, draw_rectangle_lines},
+};
+
+const CLOCK_RADIUS: f32 = 16.0;
+const GATE_WIDTH: f32 = 16.0;
+const NOTE_RADIUS: f32 = 16.0;
 
 pub trait Device {
     fn get_position(&self) -> Vec2;
     fn set_position(&mut self, pos: Vec2);
+
+    fn is_point_inside(&self, pt: Vec2) -> bool;
+
+    fn draw(&self);
 }
 
 pub struct Clock {
@@ -35,6 +47,15 @@ impl Device for Clock {
     fn set_position(&mut self, pos: Vec2) {
         self.position = pos;
     }
+
+    fn is_point_inside(&self, pt: Vec2) -> bool {
+        self.position.distance(pt) <= CLOCK_RADIUS
+    }
+
+    fn draw(&self) {
+        let Vec2 { x, y } = self.position;
+        draw_circle(x, y, CLOCK_RADIUS, WHITE);
+    }
 }
 
 pub struct Gate {
@@ -58,6 +79,24 @@ impl Device for Gate {
 
     fn set_position(&mut self, pos: Vec2) {
         self.position = pos;
+    }
+
+    fn is_point_inside(&self, pt: Vec2) -> bool {
+        let dx = (pt.x - self.position.x).abs();
+        let dy = (pt.y - self.position.y).abs();
+        dx <= GATE_WIDTH && dy <= GATE_WIDTH
+    }
+
+    fn draw(&self) {
+        let Vec2 { x, y } = self.position;
+        draw_rectangle_lines(
+            x - GATE_WIDTH / 2.,
+            y - GATE_WIDTH / 2.,
+            GATE_WIDTH,
+            GATE_WIDTH,
+            1.0,
+            WHITE,
+        );
     }
 }
 
@@ -87,6 +126,15 @@ impl Device for Note {
 
     fn set_position(&mut self, pos: Vec2) {
         self.position = pos;
+    }
+
+    fn is_point_inside(&self, pt: Vec2) -> bool {
+        self.position.distance(pt) <= NOTE_RADIUS
+    }
+
+    fn draw(&self) {
+        let Vec2 { x, y } = self.position;
+        draw_circle(x, y, NOTE_RADIUS, WHITE);
     }
 }
 
