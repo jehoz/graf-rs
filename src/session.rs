@@ -4,16 +4,11 @@ use macroquad::math::Vec2;
 
 use crate::{
     dag::{Dag, VertexId},
-    devices::{ClockDevice, Device, GateDevice, NoteDevice},
+    devices::{Clock, Device, Gate, Note},
 };
 
-pub struct Node {
-    pub position: Vec2,
-    pub device: Device,
-}
-
 pub struct Session {
-    pub devices: HashMap<VertexId, Node>,
+    pub devices: HashMap<VertexId, Box<dyn Device>>,
     pub circuit: Dag,
 }
 
@@ -26,29 +21,20 @@ impl Session {
     }
 
     pub fn create_clock(&mut self, position: Vec2) {
-        let clock = Node {
-            position,
-            device: Device::Clock(ClockDevice::default()),
-        };
+        let clock = Clock::new(position);
         let vid = self.circuit.add_vertex();
-        self.devices.insert(vid, clock);
+        self.devices.insert(vid, Box::new(clock));
     }
 
     pub fn create_gate(&mut self, position: Vec2) {
-        let gate = Node {
-            position,
-            device: Device::Gate(GateDevice::default()),
-        };
+        let gate = Gate::new(position);
         let vid = self.circuit.add_vertex();
-        self.devices.insert(vid, gate);
+        self.devices.insert(vid, Box::new(gate));
     }
 
     pub fn create_note(&mut self, position: Vec2) {
-        let note = Node {
-            position,
-            device: Device::Note(NoteDevice::default()),
-        };
+        let note = Note::new(position);
         let vid = self.circuit.add_vertex();
-        self.devices.insert(vid, note);
+        self.devices.insert(vid, Box::new(note));
     }
 }

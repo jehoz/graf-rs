@@ -1,32 +1,22 @@
-pub enum Device {
-    Clock(ClockDevice),
-    Gate(GateDevice),
-    Note(NoteDevice),
+use macroquad::math::Vec2;
+
+pub trait Device {
+    fn get_position(&self) -> Vec2;
+    fn set_position(&mut self, pos: Vec2);
 }
 
-impl Device {
-    pub fn clock() -> Self {
-        Device::Clock(ClockDevice::default())
-    }
+pub struct Clock {
+    position: Vec2,
 
-    pub fn gate() -> Self {
-        Device::Gate(GateDevice::default())
-    }
-
-    pub fn note() -> Self {
-        Device::Note(NoteDevice::default())
-    }
-}
-
-pub struct ClockDevice {
     frequency: Frequency,
     duty_cycle: f32,
     offset: f32,
 }
 
-impl Default for ClockDevice {
-    fn default() -> Self {
-        ClockDevice {
+impl Clock {
+    pub fn new(position: Vec2) -> Self {
+        Clock {
+            position,
             frequency: Frequency::Beats(BeatFraction {
                 numerator: 1,
                 denominator: 4,
@@ -37,31 +27,66 @@ impl Default for ClockDevice {
     }
 }
 
-pub struct GateDevice {
+impl Device for Clock {
+    fn get_position(&self) -> Vec2 {
+        self.position
+    }
+
+    fn set_position(&mut self, pos: Vec2) {
+        self.position = pos;
+    }
+}
+
+pub struct Gate {
+    position: Vec2,
     operation: BooleanOperation,
 }
 
-impl Default for GateDevice {
-    fn default() -> Self {
-        GateDevice {
+impl Gate {
+    pub fn new(position: Vec2) -> Self {
+        Gate {
+            position,
             operation: BooleanOperation::AND,
         }
     }
 }
 
-pub struct NoteDevice {
+impl Device for Gate {
+    fn get_position(&self) -> Vec2 {
+        self.position
+    }
+
+    fn set_position(&mut self, pos: Vec2) {
+        self.position = pos;
+    }
+}
+
+pub struct Note {
+    position: Vec2,
+
     midi_note: u8,
     velocity: u8,
     is_on: bool,
 }
 
-impl Default for NoteDevice {
-    fn default() -> Self {
-        NoteDevice {
+impl Note {
+    pub fn new(position: Vec2) -> Self {
+        Note {
+            position,
             midi_note: 60,
             velocity: 100,
             is_on: false,
         }
+    }
+}
+
+impl Device for Note {
+    fn get_position(&self) -> Vec2 {
+        self.position
+    }
+
+    fn set_position(&mut self, pos: Vec2) {
+        self.position = pos;
     }
 }
 
