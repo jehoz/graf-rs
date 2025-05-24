@@ -11,30 +11,26 @@ pub struct Edge(VertexId, VertexId);
 
 pub struct IllegalEdgeError;
 
-pub struct Dag<T> {
+pub struct Dag {
     id_counter: u32,
-    vertices: HashMap<VertexId, T>,
     edges: Vec<Edge>,
-
-    transitive_closure: Vec<Edge>,
     topological_order: Vec<VertexId>,
+    transitive_closure: Vec<Edge>,
 }
 
-impl<T> Dag<T> {
+impl Dag {
     pub fn new() -> Self {
         Dag {
             id_counter: 0,
-            vertices: HashMap::new(),
             edges: Vec::new(),
-
             transitive_closure: Vec::new(),
             topological_order: Vec::new(),
         }
     }
 
-    pub fn vertices(&self) -> Vertices<T> {
+    pub fn vertices(&self) -> Vertices {
         Vertices {
-            inner: self.vertices.iter(),
+            inner: self.topological_order.iter(),
         }
     }
 
@@ -45,7 +41,7 @@ impl<T> Dag<T> {
     }
 
     pub fn contains_vertex(&self, v: &VertexId) -> bool {
-        self.vertices.contains_key(v)
+        self.topological_order.contains(v)
     }
 
     pub fn contains_edge(&self, from: &VertexId, to: &VertexId) -> bool {
@@ -56,10 +52,9 @@ impl<T> Dag<T> {
         self.transitive_closure.contains(&Edge(*from, *to))
     }
 
-    pub fn add_vertex(&mut self, body: T) -> VertexId {
+    pub fn add_vertex(&mut self) -> VertexId {
         let id = VertexId(self.id_counter);
         self.id_counter += 1;
-        self.vertices.insert(id, body);
 
         // a new vertex can go anywhere in the topo order
         self.topological_order.push(id);
@@ -75,19 +70,25 @@ impl<T> Dag<T> {
             return Err(IllegalEdgeError);
         } else if self.contains_vertex(from) && self.contains_vertex(to) {
             self.edges.push(Edge(*from, *to));
-            self.recompute_closure();
+            self.recompute_caches();
             return Ok(());
         } else {
             return Err(IllegalEdgeError);
         }
     }
 
-    fn recompute_closure(&mut self) {
-        self.topological_order = self.topological_order();
-        self.transitive_closure = self.transitive_closure();
+    /// The Dag keeps a cached copy of its own topological ordering and
+    /// transitive closure because these structures are accessed way more often
+    /// than the graph is modified.
+    ///
+    /// This function recomputes those cached structures and should be called
+    /// whenever the graph topology changes.
+    fn recompute_caches(&mut self) {
+        self.recompute_topological_order();
+        self.recompute_transitive_closure();
     }
 
-    fn transitive_closure(&self) -> Vec<Edge> {
+    fn recompute_transitive_closure(&mut self) {
         // initialize closure as adjacency map
         let mut closure = HashMap::new();
         for v in self.topological_order.iter() {
@@ -107,16 +108,16 @@ impl<T> Dag<T> {
         }
 
         // convert from adjacency map to edge list
-        closure
+        self.transitive_closure = closure
             .iter()
             .flat_map(|(v, ws)| ws.iter().map(|w| Edge(*v, *w)))
-            .collect()
+            .collect();
     }
 
-    fn topological_order(&self) -> Vec<VertexId> {
+    fn recompute_topological_order(&mut self) {
         // count incoming edges to each vertex
         let mut incoming = HashMap::new();
-        for vid in self.vertices.keys() {
+        for vid in self.topological_order {
             incoming.insert(vid.to_owned(), 0);
         }
         for Edge(_from, to) in self.edges.iter() {
@@ -131,7 +132,7 @@ impl<T> Dag<T> {
             }
         }
 
-        let mut topo = Vec::with_capacity(self.vertices.len());
+        let mut topo = Vec::with_capacity(self.topological_order.len());
         while !sources.is_empty() {
             // pop some vertex with no incoming edges
             let v = sources.iter().next().unwrap().clone();
@@ -152,16 +153,16 @@ impl<T> Dag<T> {
             }
         }
 
-        return topo;
+        self.topological_order = topo;
     }
 }
 
-pub struct Vertices<'a, T> {
-    inner: std::collections::hash_map::Iter<'a, VertexId, T>,
+pub struct Vertices<'a> {
+    inner: std::slice::Iter<'a, VertexId>,
 }
 
-impl<'a, T> Iterator for Vertices<'a, T> {
-    type Item = (&'a VertexId, &'a T);
+impl<'a> Iterator for Vertices<'a> {
+    type Item = &'a VertexId;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next()
