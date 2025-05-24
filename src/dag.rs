@@ -132,7 +132,7 @@ impl Dag {
     fn recompute_topological_order(&mut self) {
         // count incoming edges to each vertex
         let mut incoming = HashMap::new();
-        for vid in self.topological_order {
+        for vid in self.topological_order.iter() {
             incoming.insert(vid.to_owned(), 0);
         }
         for (_from, to) in self.edges.iter() {
