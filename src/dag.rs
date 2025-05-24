@@ -6,8 +6,7 @@ use std::{
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
 pub struct VertexId(u32);
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash)]
-pub struct Edge(VertexId, VertexId);
+pub type Edge = (VertexId, VertexId);
 
 pub struct IllegalEdgeError;
 
@@ -40,16 +39,16 @@ impl Dag {
         }
     }
 
-    pub fn contains_vertex(&self, v: &VertexId) -> bool {
-        self.topological_order.contains(v)
+    pub fn contains_vertex(&self, v: VertexId) -> bool {
+        self.topological_order.contains(&v)
     }
 
-    pub fn contains_edge(&self, from: &VertexId, to: &VertexId) -> bool {
-        self.edges.contains(&Edge(*from, *to))
+    pub fn contains_edge(&self, e: Edge) -> bool {
+        self.edges.contains(&e)
     }
 
-    pub fn is_reachable(&self, from: &VertexId, to: &VertexId) -> bool {
-        self.transitive_closure.contains(&Edge(*from, *to))
+    pub fn is_reachable(&self, from: VertexId, to: VertexId) -> bool {
+        self.transitive_closure.contains(&(from, to))
     }
 
     pub fn add_vertex(&mut self) -> VertexId {
@@ -62,19 +61,35 @@ impl Dag {
         return id;
     }
 
-    pub fn add_edge(&mut self, from: &VertexId, to: &VertexId) -> Result<(), IllegalEdgeError> {
-        if self.contains_edge(&from, &to) {
+    pub fn add_edge(&mut self, e: Edge) -> Result<(), IllegalEdgeError> {
+        let (from, to) = e;
+
+        if self.contains_edge(e) {
             return Ok(());
-        } else if self.is_reachable(&to, &from) {
+        } else if self.is_reachable(to, from) {
             // edge would create cycle
             return Err(IllegalEdgeError);
         } else if self.contains_vertex(from) && self.contains_vertex(to) {
-            self.edges.push(Edge(*from, *to));
+            self.edges.push(e);
             self.recompute_caches();
             return Ok(());
         } else {
+            // edge includes nonexistent vertices
             return Err(IllegalEdgeError);
         }
+    }
+
+    pub fn remove_vertex(&mut self, v: VertexId) {
+        self.edges.retain(|(from, to)| *from != v && *to != v);
+        self.topological_order.retain(|x| *x != v);
+
+        self.recompute_caches();
+    }
+
+    pub fn remove_edge(&mut self, e: Edge) {
+        self.edges.retain(|x| *x != e);
+
+        self.recompute_caches();
     }
 
     /// The Dag keeps a cached copy of its own topological ordering and
@@ -100,7 +115,7 @@ impl Dag {
             closure.get_mut(v).unwrap().insert(*v);
             let v_reachable = closure[v].clone();
 
-            for Edge(from, to) in self.edges.iter() {
+            for (from, to) in self.edges.iter() {
                 if *v == *to {
                     closure.get_mut(&from).unwrap().extend(v_reachable.clone());
                 }
@@ -110,7 +125,7 @@ impl Dag {
         // convert from adjacency map to edge list
         self.transitive_closure = closure
             .iter()
-            .flat_map(|(v, ws)| ws.iter().map(|w| Edge(*v, *w)))
+            .flat_map(|(v, ws)| ws.iter().map(|w| (*v, *w)))
             .collect();
     }
 
@@ -120,7 +135,7 @@ impl Dag {
         for vid in self.topological_order {
             incoming.insert(vid.to_owned(), 0);
         }
-        for Edge(_from, to) in self.edges.iter() {
+        for (_from, to) in self.edges.iter() {
             *incoming.get_mut(to).unwrap() += 1;
         }
 
@@ -142,7 +157,7 @@ impl Dag {
             topo.push(v);
 
             // remove outgoing edges from that vertex, and add any new sources
-            for Edge(from, to) in self.edges.iter() {
+            for (from, to) in self.edges.iter() {
                 if *from == v {
                     *incoming.get_mut(to).unwrap() -= 1;
 
