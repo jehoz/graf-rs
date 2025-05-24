@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use macroquad::math::Vec2;
 
 use crate::{
-    dag::Dag,
+    dag::{Dag, VertexId},
     devices::{ClockDevice, Device, GateDevice, NoteDevice},
 };
 
@@ -11,12 +13,16 @@ pub struct Node {
 }
 
 pub struct Session {
-    pub nodes: Dag<Node>,
+    pub devices: HashMap<VertexId, Node>,
+    pub circuit: Dag,
 }
 
 impl Session {
     pub fn new() -> Self {
-        Session { nodes: Dag::new() }
+        Session {
+            devices: HashMap::new(),
+            circuit: Dag::new(),
+        }
     }
 
     pub fn create_clock(&mut self, position: Vec2) {
@@ -24,7 +30,8 @@ impl Session {
             position,
             device: Device::Clock(ClockDevice::default()),
         };
-        self.nodes.add_vertex(clock);
+        let vid = self.circuit.add_vertex();
+        self.devices.insert(vid, clock);
     }
 
     pub fn create_gate(&mut self, position: Vec2) {
@@ -32,7 +39,8 @@ impl Session {
             position,
             device: Device::Gate(GateDevice::default()),
         };
-        self.nodes.add_vertex(gate);
+        let vid = self.circuit.add_vertex();
+        self.devices.insert(vid, gate);
     }
 
     pub fn create_note(&mut self, position: Vec2) {
@@ -40,6 +48,7 @@ impl Session {
             position,
             device: Device::Note(NoteDevice::default()),
         };
-        self.nodes.add_vertex(note);
+        let vid = self.circuit.add_vertex();
+        self.devices.insert(vid, note);
     }
 }
