@@ -1,12 +1,12 @@
 use macroquad::{
     color::WHITE,
     math::Vec2,
-    shapes::{draw_circle, draw_rectangle_lines},
+    shapes::{draw_circle, draw_circle_lines, draw_rectangle_lines},
 };
 
-const CLOCK_RADIUS: f32 = 16.0;
-const GATE_WIDTH: f32 = 16.0;
-const NOTE_RADIUS: f32 = 16.0;
+const CLOCK_RADIUS: f32 = 25.0;
+const GATE_WIDTH: f32 = 50.0;
+const NOTE_RADIUS: f32 = 25.0;
 
 pub trait Device {
     fn get_position(&self) -> Vec2;
@@ -54,7 +54,7 @@ impl Device for Clock {
 
     fn draw(&self) {
         let Vec2 { x, y } = self.position;
-        draw_circle(x, y, CLOCK_RADIUS, WHITE);
+        draw_circle_lines(x, y, CLOCK_RADIUS, 1.0, WHITE);
     }
 }
 
@@ -94,7 +94,7 @@ impl Device for Gate {
             y - GATE_WIDTH / 2.,
             GATE_WIDTH,
             GATE_WIDTH,
-            1.0,
+            2.0,
             WHITE,
         );
     }
