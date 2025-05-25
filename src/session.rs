@@ -4,7 +4,7 @@ use macroquad::{color::WHITE, math::Vec2, shapes::draw_line};
 
 use crate::{
     dag::{Dag, VertexId},
-    devices::{Clock, Device, Gate, Note},
+    devices::{Arity, Clock, Device, Gate, Note},
 };
 
 pub struct Session {
@@ -37,6 +37,15 @@ impl Session {
             }
         }
         return None;
+    }
+
+    pub fn can_connect(&self, from: VertexId, to: VertexId) -> bool {
+        let to_dev = self.devices.get(&to).unwrap();
+        if to_dev.input_arity() == Arity::Nullary {
+            return false;
+        }
+
+        !self.circuit.is_reachable(to, from)
     }
 
     pub fn device_position(&self, id: VertexId) -> Option<Vec2> {

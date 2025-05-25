@@ -1,5 +1,5 @@
 use macroquad::{
-    color::{BLACK, WHITE},
+    color::{BLACK, RED, WHITE},
     input::{is_mouse_button_pressed, is_mouse_button_released, mouse_position, MouseButton},
     math::{vec2, Vec2},
     shapes::draw_line,
@@ -18,6 +18,7 @@ enum CursorState {
     DraggingDevice(VertexId),
     DraggingLooseWire(VertexId),
     DraggingConnectedWire(VertexId, VertexId),
+    DraggingInvalidWire(VertexId),
 }
 
 pub struct App {
@@ -70,7 +71,11 @@ impl App {
                 if is_mouse_button_released(MouseButton::Right) {
                     self.cursor = CursorState::Idle;
                 } else if let Some(to_id) = device_under_mouse {
-                    self.cursor = CursorState::DraggingConnectedWire(from_id, to_id);
+                    if self.session.can_connect(from_id, to_id) {
+                        self.cursor = CursorState::DraggingConnectedWire(from_id, to_id);
+                    } else {
+                        self.cursor = CursorState::DraggingInvalidWire(from_id);
+                    }
                 }
             }
 
@@ -78,8 +83,30 @@ impl App {
                 if is_mouse_button_released(MouseButton::Right) {
                     self.session.connect_devices(from_id, to_id);
                     self.cursor = CursorState::Idle;
-                } else if device_under_mouse == None {
-                    self.cursor = CursorState::DraggingLooseWire(from_id);
+                } else {
+                    match device_under_mouse {
+                        Some(to_id) => {
+                            if !self.session.can_connect(from_id, to_id) {
+                                self.cursor = CursorState::DraggingInvalidWire(from_id);
+                            }
+                        }
+                        None => self.cursor = CursorState::DraggingLooseWire(from_id),
+                    }
+                }
+            }
+
+            CursorState::DraggingInvalidWire(from_id) => {
+                if is_mouse_button_released(MouseButton::Right) {
+                    self.cursor = CursorState::Idle;
+                } else {
+                    match device_under_mouse {
+                        Some(to_id) => {
+                            if self.session.can_connect(from_id, to_id) {
+                                self.cursor = CursorState::DraggingConnectedWire(from_id, to_id);
+                            }
+                        }
+                        None => self.cursor = CursorState::DraggingLooseWire(from_id),
+                    }
                 }
             }
         }
@@ -111,15 +138,24 @@ impl App {
     pub fn draw(&self) {
         clear_background(BLACK);
 
-        // draw new wire being dragged out if there is one
-        if let CursorState::DraggingLooseWire(id) = self.cursor {
-            let dev_pos = self.session.device_position(id).unwrap();
-            let (mx, my) = mouse_position();
-            draw_line(dev_pos.x, dev_pos.y, mx, my, 1.0, WHITE);
-        } else if let CursorState::DraggingConnectedWire(from_id, to_id) = self.cursor {
-            let from_pos = self.session.device_position(from_id).unwrap();
-            let to_pos = self.session.device_position(to_id).unwrap();
-            draw_line(from_pos.x, from_pos.y, to_pos.x, to_pos.y, 1.0, WHITE);
+        // draw wire being dragged out if there is one
+        match self.cursor {
+            CursorState::Idle | CursorState::DraggingDevice(_) => {}
+            CursorState::DraggingLooseWire(from_id) => {
+                let dev_pos = self.session.device_position(from_id).unwrap();
+                let (mx, my) = mouse_position();
+                draw_line(dev_pos.x, dev_pos.y, mx, my, 1.0, WHITE);
+            }
+            CursorState::DraggingConnectedWire(from_id, to_id) => {
+                let from_pos = self.session.device_position(from_id).unwrap();
+                let to_pos = self.session.device_position(to_id).unwrap();
+                draw_line(from_pos.x, from_pos.y, to_pos.x, to_pos.y, 1.0, WHITE);
+            }
+            CursorState::DraggingInvalidWire(from_id) => {
+                let dev_pos = self.session.device_position(from_id).unwrap();
+                let (mx, my) = mouse_position();
+                draw_line(dev_pos.x, dev_pos.y, mx, my, 1.0, RED);
+            }
         }
 
         self.session.draw();
