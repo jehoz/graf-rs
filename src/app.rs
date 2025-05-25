@@ -1,7 +1,8 @@
 use macroquad::{
-    color::BLACK,
+    color::{BLACK, WHITE},
     input::{is_mouse_button_pressed, is_mouse_button_released, mouse_position, MouseButton},
     math::{vec2, Vec2},
+    shapes::draw_line,
     ui::{hash, root_ui, widgets::Window},
     window::clear_background,
 };
@@ -11,7 +12,7 @@ use crate::{dag::VertexId, session::Session};
 enum CursorState {
     HoveringNothing,
     DraggingDevice(VertexId),
-    DraggingLooseWire(VertexId, Vec2),
+    DraggingLooseWire(VertexId),
     DraggingConnectedWire(VertexId, VertexId),
 }
 
@@ -33,11 +34,13 @@ impl App {
     }
 
     pub fn handle_inputs(&mut self) {
+        let (mx, my) = mouse_position();
+        let m_pos = vec2(mx, my);
+        let device_under_mouse = self.session.get_device_at(m_pos);
+
         if is_mouse_button_pressed(MouseButton::Left) {
-            let (mx, my) = mouse_position();
-            match self.session.get_device_at(vec2(mx, my)) {
-                Some(vid) => self.cursor = CursorState::DraggingDevice(vid),
-                None => {}
+            if let Some(id) = device_under_mouse {
+                self.cursor = CursorState::DraggingDevice(id);
             }
         }
 
@@ -46,14 +49,23 @@ impl App {
         }
 
         if is_mouse_button_pressed(MouseButton::Right) {
-            let (mx, my) = mouse_position();
-            self.context_menu = Some(vec2(mx, my));
+            match device_under_mouse {
+                Some(id) => self.cursor = CursorState::DraggingLooseWire(id),
+                None => self.context_menu = Some(m_pos),
+            }
         }
 
         // update
-        if let CursorState::DraggingDevice(id) = self.cursor {
-            let (mx, my) = mouse_position();
-            self.session.move_device(id, vec2(mx, my));
+        match self.cursor {
+            CursorState::HoveringNothing => {}
+            CursorState::DraggingDevice(id) => {
+                self.session.move_device(id, m_pos);
+            }
+            CursorState::DraggingLooseWire(from_id)
+            | CursorState::DraggingConnectedWire(from_id, _) => match device_under_mouse {
+                Some(to_id) => self.cursor = CursorState::DraggingConnectedWire(from_id, to_id),
+                None => self.cursor = CursorState::DraggingLooseWire(from_id),
+            },
         }
 
         if let Some(pos) = self.context_menu {
@@ -79,6 +91,18 @@ impl App {
 
     pub fn draw(&self) {
         clear_background(BLACK);
+
+        // draw new wire being dragged out if there is one
+        if let CursorState::DraggingLooseWire(id) = self.cursor {
+            let dev_pos = self.session.device_position(id).unwrap();
+            let (mx, my) = mouse_position();
+            draw_line(dev_pos.x, dev_pos.y, mx, my, 1.0, WHITE);
+        } else if let CursorState::DraggingConnectedWire(from_id, to_id) = self.cursor {
+            let from_pos = self.session.device_position(from_id).unwrap();
+            let to_pos = self.session.device_position(to_id).unwrap();
+            draw_line(from_pos.x, from_pos.y, to_pos.x, to_pos.y, 1.0, WHITE);
+        }
+
         self.session.draw();
     }
 }
