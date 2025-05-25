@@ -7,7 +7,11 @@ use macroquad::{
     window::clear_background,
 };
 
-use crate::{dag::VertexId, session::Session};
+use crate::{
+    dag::VertexId,
+    devices::{Clock, Gate, Note},
+    session::Session,
+};
 
 enum CursorState {
     HoveringNothing,
@@ -74,15 +78,18 @@ impl App {
                 .movable(false)
                 .ui(&mut *root_ui(), |ui| {
                     if ui.button(None, "Clock") {
-                        self.session.create_clock(pos);
+                        let clock = Clock::new(pos);
+                        self.session.add_device(Box::new(clock));
                         self.context_menu = None;
                     }
                     if ui.button(None, "Gate") {
-                        self.session.create_gate(pos);
+                        let gate = Gate::new(pos);
+                        self.session.add_device(Box::new(gate));
                         self.context_menu = None;
                     }
                     if ui.button(None, "Note") {
-                        self.session.create_note(pos);
+                        let note = Note::new(pos);
+                        self.session.add_device(Box::new(note));
                         self.context_menu = None;
                     }
                 });

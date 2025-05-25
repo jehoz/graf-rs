@@ -20,22 +20,9 @@ impl Session {
         }
     }
 
-    pub fn create_clock(&mut self, position: Vec2) {
-        let clock = Clock::new(position);
-        let vid = self.circuit.add_vertex();
-        self.devices.insert(vid, Box::new(clock));
-    }
-
-    pub fn create_gate(&mut self, position: Vec2) {
-        let gate = Gate::new(position);
-        let vid = self.circuit.add_vertex();
-        self.devices.insert(vid, Box::new(gate));
-    }
-
-    pub fn create_note(&mut self, position: Vec2) {
-        let note = Note::new(position);
-        let vid = self.circuit.add_vertex();
-        self.devices.insert(vid, Box::new(note));
+    pub fn add_device(&mut self, device: Box<dyn Device>) {
+        let id = self.circuit.add_vertex();
+        self.devices.insert(id, device);
     }
 
     pub fn get_device_at(&self, point: Vec2) -> Option<VertexId> {
