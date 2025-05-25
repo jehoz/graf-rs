@@ -25,6 +25,11 @@ impl Session {
         self.devices.insert(id, device);
     }
 
+    pub fn connect_devices(&mut self, from: VertexId, to: VertexId) {
+        // just silently ignore any errors for now
+        let _ = self.circuit.add_edge((from, to));
+    }
+
     pub fn get_device_at(&self, point: Vec2) -> Option<VertexId> {
         for (id, device) in self.devices.iter() {
             if device.is_point_inside(point) {
