@@ -47,6 +47,10 @@ impl Session {
         return None;
     }
 
+    pub fn device_position(&self, id: VertexId) -> Option<Vec2> {
+        self.devices.get(&id).map(|d| d.get_position())
+    }
+
     pub fn move_device(&mut self, device_id: VertexId, position: Vec2) {
         if let Some(device) = self.devices.get_mut(&device_id) {
             device.set_position(position);
