@@ -8,6 +8,7 @@ const CLOCK_RADIUS: f32 = 18.0;
 const GATE_WIDTH: f32 = 36.0;
 const NOTE_RADIUS: f32 = 18.0;
 
+#[derive(PartialEq)]
 pub enum Arity {
     Nullary,
     Unary,
