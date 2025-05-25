@@ -14,7 +14,7 @@ use crate::{
 };
 
 enum CursorState {
-    HoveringNothing,
+    Idle,
     DraggingDevice(VertexId),
     DraggingLooseWire(VertexId),
     DraggingConnectedWire(VertexId, VertexId),
@@ -31,7 +31,7 @@ impl App {
     pub fn new() -> Self {
         App {
             session: Session::new(),
-            cursor: CursorState::HoveringNothing,
+            cursor: CursorState::Idle,
 
             context_menu: None,
         }
@@ -43,7 +43,7 @@ impl App {
         let device_under_mouse = self.session.get_device_at(m_pos);
 
         match self.cursor {
-            CursorState::HoveringNothing => match device_under_mouse {
+            CursorState::Idle => match device_under_mouse {
                 Some(id) => {
                     if is_mouse_button_pressed(MouseButton::Left) {
                         self.cursor = CursorState::DraggingDevice(id);
@@ -62,13 +62,13 @@ impl App {
             CursorState::DraggingDevice(id) => {
                 self.session.move_device(id, m_pos);
                 if is_mouse_button_released(MouseButton::Left) {
-                    self.cursor = CursorState::HoveringNothing;
+                    self.cursor = CursorState::Idle;
                 }
             }
 
             CursorState::DraggingLooseWire(from_id) => {
                 if is_mouse_button_released(MouseButton::Right) {
-                    self.cursor = CursorState::HoveringNothing;
+                    self.cursor = CursorState::Idle;
                 } else if let Some(to_id) = device_under_mouse {
                     self.cursor = CursorState::DraggingConnectedWire(from_id, to_id);
                 }
@@ -77,7 +77,7 @@ impl App {
             CursorState::DraggingConnectedWire(from_id, to_id) => {
                 if is_mouse_button_released(MouseButton::Right) {
                     self.session.connect_devices(from_id, to_id);
-                    self.cursor = CursorState::HoveringNothing;
+                    self.cursor = CursorState::Idle;
                 } else if device_under_mouse == None {
                     self.cursor = CursorState::DraggingLooseWire(from_id);
                 }
