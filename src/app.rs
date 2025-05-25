@@ -42,34 +42,46 @@ impl App {
         let m_pos = vec2(mx, my);
         let device_under_mouse = self.session.get_device_at(m_pos);
 
-        if is_mouse_button_pressed(MouseButton::Left) {
-            if let Some(id) = device_under_mouse {
-                self.cursor = CursorState::DraggingDevice(id);
-            }
-        }
-
-        if is_mouse_button_released(MouseButton::Left) {
-            self.cursor = CursorState::HoveringNothing;
-        }
-
-        if is_mouse_button_pressed(MouseButton::Right) {
-            match device_under_mouse {
-                Some(id) => self.cursor = CursorState::DraggingLooseWire(id),
-                None => self.context_menu = Some(m_pos),
-            }
-        }
-
-        // update
         match self.cursor {
-            CursorState::HoveringNothing => {}
+            CursorState::HoveringNothing => match device_under_mouse {
+                Some(id) => {
+                    if is_mouse_button_pressed(MouseButton::Left) {
+                        self.cursor = CursorState::DraggingDevice(id);
+                    }
+                    if is_mouse_button_pressed(MouseButton::Right) {
+                        self.cursor = CursorState::DraggingLooseWire(id);
+                    }
+                }
+                None => {
+                    if is_mouse_button_pressed(MouseButton::Right) {
+                        self.context_menu = Some(m_pos);
+                    }
+                }
+            },
+
             CursorState::DraggingDevice(id) => {
                 self.session.move_device(id, m_pos);
+                if is_mouse_button_released(MouseButton::Left) {
+                    self.cursor = CursorState::HoveringNothing;
+                }
             }
-            CursorState::DraggingLooseWire(from_id)
-            | CursorState::DraggingConnectedWire(from_id, _) => match device_under_mouse {
-                Some(to_id) => self.cursor = CursorState::DraggingConnectedWire(from_id, to_id),
-                None => self.cursor = CursorState::DraggingLooseWire(from_id),
-            },
+
+            CursorState::DraggingLooseWire(from_id) => {
+                if is_mouse_button_released(MouseButton::Right) {
+                    self.cursor = CursorState::HoveringNothing;
+                } else if let Some(to_id) = device_under_mouse {
+                    self.cursor = CursorState::DraggingConnectedWire(from_id, to_id);
+                }
+            }
+
+            CursorState::DraggingConnectedWire(from_id, to_id) => {
+                if is_mouse_button_released(MouseButton::Right) {
+                    self.session.connect_devices(from_id, to_id);
+                    self.cursor = CursorState::HoveringNothing;
+                } else if device_under_mouse == None {
+                    self.cursor = CursorState::DraggingLooseWire(from_id);
+                }
+            }
         }
 
         if let Some(pos) = self.context_menu {
