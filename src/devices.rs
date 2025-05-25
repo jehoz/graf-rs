@@ -4,9 +4,15 @@ use macroquad::{
     shapes::{draw_circle, draw_circle_lines, draw_rectangle_lines},
 };
 
-const CLOCK_RADIUS: f32 = 25.0;
-const GATE_WIDTH: f32 = 50.0;
-const NOTE_RADIUS: f32 = 25.0;
+const CLOCK_RADIUS: f32 = 18.0;
+const GATE_WIDTH: f32 = 36.0;
+const NOTE_RADIUS: f32 = 18.0;
+
+pub enum Arity {
+    Nullary,
+    Unary,
+    NAry,
+}
 
 pub trait Device {
     fn get_position(&self) -> Vec2;
@@ -15,6 +21,12 @@ pub trait Device {
     fn is_point_inside(&self, pt: Vec2) -> bool;
 
     fn draw(&self);
+
+    // number of input wires that can be plugged into the device
+    fn input_arity(&self) -> Arity;
+
+    // can there be wires coming out of this device?
+    fn has_output(&self) -> bool;
 }
 
 pub struct Clock {
@@ -55,6 +67,14 @@ impl Device for Clock {
     fn draw(&self) {
         let Vec2 { x, y } = self.position;
         draw_circle_lines(x, y, CLOCK_RADIUS, 1.0, WHITE);
+    }
+
+    fn input_arity(&self) -> Arity {
+        Arity::Nullary
+    }
+
+    fn has_output(&self) -> bool {
+        true
     }
 }
 
@@ -98,6 +118,14 @@ impl Device for Gate {
             WHITE,
         );
     }
+
+    fn input_arity(&self) -> Arity {
+        Arity::NAry
+    }
+
+    fn has_output(&self) -> bool {
+        true
+    }
 }
 
 pub struct Note {
@@ -135,6 +163,14 @@ impl Device for Note {
     fn draw(&self) {
         let Vec2 { x, y } = self.position;
         draw_circle(x, y, NOTE_RADIUS, WHITE);
+    }
+
+    fn input_arity(&self) -> Arity {
+        Arity::Unary
+    }
+
+    fn has_output(&self) -> bool {
+        false
     }
 }
 
