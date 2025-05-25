@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use macroquad::math::Vec2;
+use macroquad::{color::WHITE, math::Vec2, shapes::draw_line};
 
 use crate::{
     dag::{Dag, VertexId},
@@ -50,7 +50,11 @@ impl Session {
     }
 
     pub fn draw(&self) {
-        // TODO draw wires
+        for (from, to) in self.circuit.edges() {
+            let from_pos = self.device_position(*from).unwrap();
+            let to_pos = self.device_position(*to).unwrap();
+            draw_line(from_pos.x, from_pos.y, to_pos.x, to_pos.y, 1.0, WHITE);
+        }
 
         for device in self.devices.values() {
             device.draw();
