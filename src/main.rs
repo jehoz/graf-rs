@@ -1,10 +1,10 @@
 use app::App;
-use macroquad::{prelude::*, ui::InputHandler};
-use session::Session;
+use macroquad::prelude::*;
 
 mod app;
 mod dag;
 mod devices;
+mod drawing_utils;
 mod session;
 
 fn window_conf() -> Conf {

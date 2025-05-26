@@ -10,6 +10,7 @@ use macroquad::{
 use crate::{
     dag::VertexId,
     devices::{Clock, Gate, Note},
+    drawing_utils::draw_arrow,
     session::Session,
 };
 
@@ -136,6 +137,9 @@ impl App {
     }
 
     pub fn draw(&self) {
+        let (mx, my) = mouse_position();
+        let m_pos = vec2(mx, my);
+
         clear_background(BLACK);
 
         // draw wire being dragged out if there is one
@@ -143,8 +147,7 @@ impl App {
             CursorState::Idle | CursorState::DraggingDevice(_) => {}
             CursorState::DraggingLooseWire(from_id) => {
                 let dev_pos = self.session.device_position(from_id).unwrap();
-                let (mx, my) = mouse_position();
-                draw_line(dev_pos.x, dev_pos.y, mx, my, 1.0, WHITE);
+                draw_arrow(dev_pos, m_pos, 1.0, 6.0, WHITE);
             }
             CursorState::DraggingConnectedWire(from_id, to_id) => {
                 let from_pos = self.session.device_position(from_id).unwrap();
@@ -153,7 +156,6 @@ impl App {
             }
             CursorState::DraggingInvalidWire(from_id) => {
                 let dev_pos = self.session.device_position(from_id).unwrap();
-                let (mx, my) = mouse_position();
                 draw_line(dev_pos.x, dev_pos.y, mx, my, 1.0, RED);
             }
         }
