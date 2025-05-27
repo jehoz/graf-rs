@@ -10,7 +10,7 @@ use macroquad::{
 use crate::{
     dag::VertexId,
     devices::{Clock, Gate, Note},
-    drawing_utils::draw_arrow,
+    drawing_utils::draw_three_segment_arrow,
     session::Session,
 };
 
@@ -147,7 +147,8 @@ impl App {
             CursorState::Idle | CursorState::DraggingDevice(_) => {}
             CursorState::DraggingLooseWire(from_id) => {
                 let dev_pos = self.session.device_position(from_id).unwrap();
-                draw_arrow(dev_pos, m_pos, 1.0, 6.0, WHITE);
+
+                draw_three_segment_arrow(dev_pos, m_pos, 1.0, 6.0, WHITE);
             }
             CursorState::DraggingConnectedWire(from_id, to_id) => {
                 let from_pos = self.session.device_position(from_id).unwrap();
