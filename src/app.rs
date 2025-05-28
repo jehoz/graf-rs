@@ -2,7 +2,6 @@ use macroquad::{
     color::{BLACK, RED, WHITE},
     input::{is_mouse_button_pressed, is_mouse_button_released, mouse_position, MouseButton},
     math::{vec2, Vec2},
-    shapes::draw_line,
     ui::{hash, root_ui, widgets::Window},
     window::clear_background,
 };
@@ -10,7 +9,7 @@ use macroquad::{
 use crate::{
     dag::VertexId,
     devices::{Clock, Gate, Note},
-    drawing_utils::draw_three_segment_arrow,
+    drawing_utils::draw_wire,
     session::Session,
 };
 
@@ -147,17 +146,16 @@ impl App {
             CursorState::Idle | CursorState::DraggingDevice(_) => {}
             CursorState::DraggingLooseWire(from_id) => {
                 let dev_pos = self.session.device_position(from_id).unwrap();
-
-                draw_three_segment_arrow(dev_pos, m_pos, 1.0, 6.0, WHITE);
+                draw_wire(dev_pos, m_pos, WHITE);
             }
             CursorState::DraggingConnectedWire(from_id, to_id) => {
                 let from_pos = self.session.device_position(from_id).unwrap();
                 let to_pos = self.session.device_position(to_id).unwrap();
-                draw_line(from_pos.x, from_pos.y, to_pos.x, to_pos.y, 1.0, WHITE);
+                draw_wire(from_pos, to_pos, WHITE);
             }
             CursorState::DraggingInvalidWire(from_id) => {
                 let dev_pos = self.session.device_position(from_id).unwrap();
-                draw_line(dev_pos.x, dev_pos.y, mx, my, 1.0, RED);
+                draw_wire(dev_pos, m_pos, RED);
             }
         }
 

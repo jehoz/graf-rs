@@ -44,13 +44,7 @@ pub fn draw_arrow_path(path: Path, thickness: f32, head_size: f32, color: Color)
     draw_poly(p1.x, p1.y, 3, head_size, rotation, color);
 }
 
-pub fn draw_three_segment_arrow(
-    from: Vec2,
-    to: Vec2,
-    thickness: f32,
-    head_size: f32,
-    color: Color,
-) {
+pub fn draw_wire(from: Vec2, to: Vec2, color: Color) {
     let path = three_segment_path(from, to);
-    draw_arrow_path(path, thickness, head_size, color);
+    draw_arrow_path(path, 1.0, 6.0, color);
 }

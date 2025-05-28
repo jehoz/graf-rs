@@ -5,6 +5,7 @@ use macroquad::{color::WHITE, math::Vec2, shapes::draw_line};
 use crate::{
     dag::{Dag, VertexId},
     devices::{Arity, Clock, Device, Gate, Note},
+    drawing_utils::draw_wire,
 };
 
 pub struct Session {
@@ -62,7 +63,7 @@ impl Session {
         for (from, to) in self.circuit.edges() {
             let from_pos = self.device_position(*from).unwrap();
             let to_pos = self.device_position(*to).unwrap();
-            draw_line(from_pos.x, from_pos.y, to_pos.x, to_pos.y, 1.0, WHITE);
+            draw_wire(from_pos, to_pos, WHITE);
         }
 
         for device in self.devices.values() {
