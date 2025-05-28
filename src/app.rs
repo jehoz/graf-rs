@@ -8,7 +8,7 @@ use macroquad::{
 
 use crate::{
     dag::VertexId,
-    devices::{Clock, Gate, Note},
+    devices::{clock::Clock, gate::Gate, note::Note},
     drawing_utils::draw_wire,
     session::Session,
 };

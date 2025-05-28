@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use macroquad::{color::WHITE, math::Vec2, shapes::draw_line};
+use macroquad::{color::WHITE, math::Vec2};
 
 use crate::{
     dag::{Dag, VertexId},
-    devices::{Arity, Clock, Device, Gate, Note},
+    devices::{Arity, Device},
     drawing_utils::draw_wire,
 };
 
