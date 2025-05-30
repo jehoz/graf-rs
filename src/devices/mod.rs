@@ -18,6 +18,7 @@ pub enum Arity {
 pub trait Device {
     fn get_position(&self) -> Vec2;
     fn set_position(&mut self, pos: Vec2);
+    fn closest_border_point(&self, point: Vec2) -> Vec2;
 
     fn is_point_inside(&self, pt: Vec2) -> bool;
 

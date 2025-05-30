@@ -1,4 +1,8 @@
-use macroquad::{color::WHITE, math::Vec2, shapes::draw_rectangle_lines};
+use macroquad::{
+    color::WHITE,
+    math::{vec2, Vec2},
+    shapes::draw_rectangle_lines,
+};
 
 use super::{Arity, Device, GATE_WIDTH};
 
@@ -32,6 +36,21 @@ impl Device for Gate {
 
     fn set_position(&mut self, pos: Vec2) {
         self.position = pos;
+    }
+
+    fn closest_border_point(&self, point: Vec2) -> Vec2 {
+        let Vec2 { x: dx, y: dy } = self.position - point;
+        if dx == dy {
+            self.position
+                - vec2(
+                    dx.signum() * GATE_WIDTH / 2.0,
+                    dy.signum() * GATE_WIDTH / 2.0,
+                )
+        } else if dx > dy {
+            self.position - vec2(GATE_WIDTH / 2.0, 0.0) * dx.signum()
+        } else {
+            self.position - vec2(0.0, GATE_WIDTH / 2.0) * dy.signum()
+        }
     }
 
     fn is_point_inside(&self, pt: Vec2) -> bool {
