@@ -63,7 +63,11 @@ impl Session {
         for (from, to) in self.circuit.edges() {
             let from_pos = self.device_position(*from).unwrap();
             // let to_pos = self.device_position(*to).unwrap();
-            let to_pos = self.devices.get(to).unwrap().closest_border_point(from_pos);
+            let to_pos = self
+                .devices
+                .get(to)
+                .unwrap()
+                .closest_border_point(from_pos, 3.0);
             draw_wire(from_pos, to_pos, WHITE);
         }
 

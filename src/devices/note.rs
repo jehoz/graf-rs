@@ -30,9 +30,9 @@ impl Device for Note {
         self.position = pos;
     }
 
-    fn closest_border_point(&self, point: Vec2) -> Vec2 {
+    fn closest_border_point(&self, point: Vec2, padding: f32) -> Vec2 {
         let delta = point - self.position;
-        self.position + (delta.normalize() * NOTE_RADIUS)
+        self.position + delta * (NOTE_RADIUS + padding)
     }
 
     fn is_point_inside(&self, pt: Vec2) -> bool {
