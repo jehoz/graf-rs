@@ -38,19 +38,14 @@ impl Device for Gate {
         self.position = pos;
     }
 
-    fn closest_border_point(&self, point: Vec2) -> Vec2 {
-        let Vec2 { x: dx, y: dy } = self.position - point;
-        if dx == dy {
-            self.position
-                - vec2(
-                    dx.signum() * GATE_WIDTH / 2.0,
-                    dy.signum() * GATE_WIDTH / 2.0,
-                )
-        } else if dx > dy {
-            self.position - vec2(GATE_WIDTH / 2.0, 0.0) * dx.signum()
-        } else {
-            self.position - vec2(0.0, GATE_WIDTH / 2.0) * dy.signum()
-        }
+    fn closest_border_point(&self, point: Vec2, padding: f32) -> Vec2 {
+        let padded_width = (GATE_WIDTH / 2.0) + padding;
+        let u = f32::max(
+            (point.x - self.position.x).abs(),
+            (point.y - self.position.y).abs(),
+        );
+
+        padded_width * (point - self.position) / u + self.position
     }
 
     fn is_point_inside(&self, pt: Vec2) -> bool {
