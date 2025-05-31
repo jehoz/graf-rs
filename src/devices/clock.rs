@@ -45,7 +45,7 @@ impl Device for Clock {
 
     fn closest_border_point(&self, point: Vec2, padding: f32) -> Vec2 {
         let delta = point - self.position;
-        self.position + delta * (CLOCK_RADIUS + padding)
+        self.position + delta.normalize() * (CLOCK_RADIUS + padding)
     }
 
     fn is_point_inside(&self, pt: Vec2) -> bool {
