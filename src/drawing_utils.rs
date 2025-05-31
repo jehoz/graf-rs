@@ -41,7 +41,9 @@ pub fn draw_arrow_path(path: Path, thickness: f32, head_size: f32, color: Color)
     let p1 = path.last().unwrap();
     let p0 = path.iter().rev().skip(1).next().unwrap();
     let rotation = vec2(1.0, 0.0).angle_between(*p1 - *p0).to_degrees();
-    draw_poly(p1.x, p1.y, 3, head_size, rotation, color);
+
+    let arrow_pos = *p1 - (*p1 - *p0).normalize() * head_size;
+    draw_poly(arrow_pos.x, arrow_pos.y, 3, head_size, rotation, color);
 }
 
 pub fn draw_wire(from: Vec2, to: Vec2, color: Color) {
