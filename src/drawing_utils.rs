@@ -12,20 +12,20 @@ pub fn three_segment_path(from: Vec2, to: Vec2) -> Path {
     let delta = to - from;
     if delta.x.abs() > delta.y.abs() {
         let span = delta.x.signum() * (delta.x.abs() - delta.y.abs()) / 2.0;
-        return vec![
+        vec![
             from,
             vec2(from.x + span, from.y),
             vec2(to.x - span, to.y),
             to,
-        ];
+        ]
     } else {
         let span = delta.y.signum() * (delta.y.abs() - delta.x.abs()) / 2.0;
-        return vec![
+        vec![
             from,
             vec2(from.x, from.y + span),
             vec2(to.x, to.y - span),
             to,
-        ];
+        ]
     }
 }
 
@@ -47,6 +47,7 @@ pub fn draw_arrow_path(path: Path, thickness: f32, head_size: f32, color: Color)
 }
 
 pub fn draw_wire(from: Vec2, to: Vec2, color: Color) {
-    let path = three_segment_path(from, to);
+    // let path = three_segment_path(from, to);
+    let path = vec![from, to];
     draw_arrow_path(path, 1.0, 6.0, color);
 }
