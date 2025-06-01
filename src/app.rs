@@ -9,7 +9,7 @@ use macroquad::{
 use crate::{
     dag::VertexId,
     devices::{clock::Clock, gate::Gate, note::Note},
-    drawing_utils::draw_wire,
+    drawing_utils::{draw_wire_between_devices, draw_wire_from_device},
     session::Session,
 };
 
@@ -145,17 +145,17 @@ impl App {
         match self.cursor {
             CursorState::Idle | CursorState::DraggingDevice(_) => {}
             CursorState::DraggingLooseWire(from_id) => {
-                let dev_pos = self.session.device_position(from_id).unwrap();
-                draw_wire(dev_pos, m_pos, WHITE);
+                let from_dev = self.session.devices.get(&from_id).unwrap();
+                draw_wire_from_device(from_dev.as_ref(), m_pos, WHITE);
             }
             CursorState::DraggingConnectedWire(from_id, to_id) => {
-                let from_pos = self.session.device_position(from_id).unwrap();
-                let to_pos = self.session.device_position(to_id).unwrap();
-                draw_wire(from_pos, to_pos, WHITE);
+                let from_dev = self.session.devices.get(&from_id).unwrap();
+                let to_dev = self.session.devices.get(&to_id).unwrap();
+                draw_wire_between_devices(from_dev.as_ref(), to_dev.as_ref(), WHITE);
             }
             CursorState::DraggingInvalidWire(from_id) => {
-                let dev_pos = self.session.device_position(from_id).unwrap();
-                draw_wire(dev_pos, m_pos, RED);
+                let from_dev = self.session.devices.get(&from_id).unwrap();
+                draw_wire_from_device(from_dev.as_ref(), m_pos, RED);
             }
         }
 

@@ -5,7 +5,7 @@ use macroquad::{color::WHITE, math::Vec2};
 use crate::{
     dag::{Dag, VertexId},
     devices::{Arity, Device},
-    drawing_utils::draw_wire,
+    drawing_utils::draw_wire_between_devices,
 };
 
 pub struct Session {
@@ -37,7 +37,7 @@ impl Session {
                 return Some(*id);
             }
         }
-        return None;
+        None
     }
 
     pub fn can_connect(&self, from: VertexId, to: VertexId) -> bool {
@@ -60,19 +60,14 @@ impl Session {
     }
 
     pub fn draw(&self) {
-        for (from, to) in self.circuit.edges() {
-            let from_pos = self.device_position(*from).unwrap();
-            // let to_pos = self.device_position(*to).unwrap();
-            let to_pos = self
-                .devices
-                .get(to)
-                .unwrap()
-                .closest_border_point(from_pos, 3.0);
-            draw_wire(from_pos, to_pos, WHITE);
-        }
-
         for device in self.devices.values() {
             device.draw();
+        }
+
+        for (from_id, to_id) in self.circuit.edges() {
+            let from_dev = self.devices.get(&from_id).unwrap();
+            let to_dev = self.devices.get(&to_id).unwrap();
+            draw_wire_between_devices(from_dev.as_ref(), to_dev.as_ref(), WHITE);
         }
     }
 }

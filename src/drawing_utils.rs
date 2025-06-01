@@ -4,6 +4,8 @@ use macroquad::{
     shapes::{draw_line, draw_poly},
 };
 
+use crate::devices::Device;
+
 type Path = Vec<Vec2>;
 
 /// Computes a path between two points using at-most three straight lines which
@@ -47,7 +49,17 @@ pub fn draw_arrow_path(path: Path, thickness: f32, head_size: f32, color: Color)
 }
 
 pub fn draw_wire(from: Vec2, to: Vec2, color: Color) {
-    // let path = three_segment_path(from, to);
     let path = vec![from, to];
     draw_arrow_path(path, 1.0, 6.0, color);
+}
+
+pub fn draw_wire_from_device<D: Device + ?Sized>(from_dev: &D, to: Vec2, color: Color) {
+    let from_pos = from_dev.closest_border_point(to, 3.0);
+    draw_wire(from_pos, to, color);
+}
+
+pub fn draw_wire_between_devices<D: Device + ?Sized>(from_dev: &D, to_dev: &D, color: Color) {
+    let from_pos = from_dev.closest_border_point(to_dev.get_position(), 3.0);
+    let to_pos = to_dev.closest_border_point(from_dev.get_position(), 3.0);
+    draw_wire(from_pos, to_pos, color);
 }
