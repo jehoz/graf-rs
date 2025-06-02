@@ -1,7 +1,8 @@
 use macroquad::{
-    color::{BLACK, RED, WHITE},
+    color::{BLACK, GRAY, RED, WHITE},
     input::{is_mouse_button_pressed, is_mouse_button_released, mouse_position, MouseButton},
     math::{vec2, Vec2},
+    shapes::draw_rectangle_lines,
     ui::{hash, root_ui, widgets::Window},
     window::clear_background,
 };
@@ -19,11 +20,13 @@ enum CursorState {
     DraggingLooseWire(VertexId),
     DraggingConnectedWire(VertexId, VertexId),
     DraggingInvalidWire(VertexId),
+    DraggingSelectBox(Vec2),
 }
 
 pub struct App {
     session: Session,
     cursor: CursorState,
+    selected: Vec<VertexId>,
 
     context_menu: Option<Vec2>,
 }
@@ -33,6 +36,7 @@ impl App {
         App {
             session: Session::new(),
             cursor: CursorState::Idle,
+            selected: Vec::new(),
 
             context_menu: None,
         }
@@ -54,6 +58,9 @@ impl App {
                     }
                 }
                 None => {
+                    if is_mouse_button_pressed(MouseButton::Left) {
+                        self.cursor = CursorState::DraggingSelectBox(m_pos);
+                    }
                     if is_mouse_button_pressed(MouseButton::Right) {
                         self.context_menu = Some(m_pos);
                     }
@@ -109,6 +116,26 @@ impl App {
                     }
                 }
             }
+            CursorState::DraggingSelectBox(starting_corner) => {
+                if is_mouse_button_released(MouseButton::Left) {
+                    self.cursor = CursorState::Idle;
+                } else {
+                    self.selected.clear();
+                    let top = f32::min(starting_corner.y, m_pos.y);
+                    let left = f32::min(starting_corner.x, m_pos.x);
+                    let delta = (m_pos - starting_corner).abs();
+                    let right = left + delta.x;
+                    let bottom = top + delta.y;
+
+                    for (id, device) in self.session.devices.iter() {
+                        let Vec2 { x: dev_x, y: dev_y } = device.get_position();
+                        // device position inside selection box?
+                        if dev_x > left && dev_x < right && dev_y > top && dev_y < bottom {
+                            self.selected.push(*id);
+                        }
+                    }
+                }
+            }
         }
 
         if let Some(pos) = self.context_menu {
@@ -141,7 +168,6 @@ impl App {
 
         clear_background(BLACK);
 
-        // draw wire being dragged out if there is one
         match self.cursor {
             CursorState::Idle | CursorState::DraggingDevice(_) => {}
             CursorState::DraggingLooseWire(from_id) => {
@@ -156,6 +182,12 @@ impl App {
             CursorState::DraggingInvalidWire(from_id) => {
                 let from_dev = self.session.devices.get(&from_id).unwrap();
                 draw_wire_from_device(from_dev.as_ref(), m_pos, RED);
+            }
+            CursorState::DraggingSelectBox(starting_corner) => {
+                let top = f32::min(starting_corner.y, m_pos.y);
+                let left = f32::min(starting_corner.x, m_pos.x);
+                let delta = (m_pos - starting_corner).abs();
+                draw_rectangle_lines(left, top, delta.x, delta.y, 1.0, WHITE);
             }
         }
 
