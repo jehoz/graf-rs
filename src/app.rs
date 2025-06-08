@@ -1,5 +1,5 @@
 use macroquad::{
-    color::{BLACK, GRAY, RED, WHITE},
+    color::{BLACK, RED, WHITE},
     input::{is_mouse_button_pressed, is_mouse_button_released, mouse_position, MouseButton},
     math::{vec2, Vec2},
     shapes::draw_rectangle_lines,
@@ -58,11 +58,23 @@ impl App {
                     }
                 }
                 None => {
-                    if is_mouse_button_pressed(MouseButton::Left) {
-                        self.cursor = CursorState::DraggingSelectBox(m_pos);
-                    }
-                    if is_mouse_button_pressed(MouseButton::Right) {
-                        self.context_menu = Some(m_pos);
+                    let wire_under_mouse = self.session.get_wire_at(m_pos);
+
+                    match wire_under_mouse {
+                        Some((from_id, to_id)) => {
+                            if is_mouse_button_pressed(MouseButton::Right) {
+                                self.session.disconnect_devices(from_id, to_id);
+                                self.cursor = CursorState::DraggingLooseWire(from_id);
+                            }
+                        }
+                        None => {
+                            if is_mouse_button_pressed(MouseButton::Left) {
+                                self.cursor = CursorState::DraggingSelectBox(m_pos);
+                            }
+                            if is_mouse_button_pressed(MouseButton::Right) {
+                                self.context_menu = Some(m_pos);
+                            }
+                        }
                     }
                 }
             },

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use macroquad::{color::WHITE, math::Vec2};
 
 use crate::{
-    dag::{Dag, VertexId},
+    dag::{Dag, Edge, VertexId},
     devices::{Arity, Device},
     drawing_utils::draw_wire_between_devices,
 };
@@ -31,12 +31,35 @@ impl Session {
         let _ = self.circuit.add_edge((from, to));
     }
 
+    pub fn disconnect_devices(&mut self, from: VertexId, to: VertexId) {
+        self.circuit.remove_edge((from, to))
+    }
+
     pub fn get_device_at(&self, point: Vec2) -> Option<VertexId> {
         for (id, device) in self.devices.iter() {
             if device.is_point_inside(point) {
                 return Some(*id);
             }
         }
+        None
+    }
+
+    pub fn get_wire_at(&self, point: Vec2) -> Option<Edge> {
+        const WIRE_CLICKABLE_DISTANCE: f32 = 5.0;
+
+        for (from_id, to_id) in self.circuit.edges() {
+            let Vec2 { x: x1, y: y1 } = self.device_position(*from_id).unwrap();
+            let Vec2 { x: x2, y: y2 } = self.device_position(*to_id).unwrap();
+
+            // closest distance from point to straight line between devices
+            let dist = ((y2 - y1) * point.x - (x2 - x1) * point.y + x2 * y1 - y2 * x1).abs()
+                / ((y2 - y1).powi(2) + (x2 - x1).powi(2)).sqrt();
+
+            if dist < WIRE_CLICKABLE_DISTANCE {
+                return Some((*from_id, *to_id));
+            }
+        }
+
         None
     }
 
