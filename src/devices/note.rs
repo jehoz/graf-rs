@@ -1,4 +1,8 @@
-use macroquad::{color::WHITE, math::Vec2, shapes::draw_circle};
+use macroquad::{
+    color::WHITE,
+    math::Vec2,
+    shapes::{draw_circle, draw_circle_lines},
+};
 
 use super::{Arity, Device, NOTE_RADIUS};
 
@@ -43,10 +47,9 @@ impl Device for Note {
         if let Some(input_on) = inputs.first() {
             if *input_on && !self.is_on {
                 // TODO send MIDI message
-                println!("note on");
                 self.is_on = true;
             } else if !(*input_on) && self.is_on {
-                println!("note off");
+                // TODO send MIDI message
                 self.is_on = false;
             }
         }
@@ -55,7 +58,10 @@ impl Device for Note {
 
     fn draw(&self) {
         let Vec2 { x, y } = self.position;
-        draw_circle(x, y, NOTE_RADIUS, WHITE);
+        draw_circle_lines(x, y, NOTE_RADIUS, 1.0, WHITE);
+        if self.is_on {
+            draw_circle(x, y, NOTE_RADIUS / 2.0, WHITE);
+        }
     }
 
     fn input_arity(&self) -> Arity {
