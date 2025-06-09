@@ -71,6 +71,7 @@ impl Device for Clock {
         // let dc = (1000.0 * dt.as_secs_f32()) / self.period
         let dc = (1000.0 * dt.as_secs_f32()) / 1500.0;
 
+        self.last_timestamp = now;
         self.cycle_position = (self.cycle_position + dc) % 1.0;
 
         if (self.cycle_position - self.offset) % 1.0 <= self.duty_cycle {
