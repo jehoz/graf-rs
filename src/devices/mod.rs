@@ -22,6 +22,7 @@ pub trait Device {
 
     fn is_point_inside(&self, pt: Vec2) -> bool;
 
+    fn update(&mut self, inputs: Vec<bool>) -> Option<bool>;
     fn draw(&self);
 
     // number of input wires that can be plugged into the device
