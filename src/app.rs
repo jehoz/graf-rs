@@ -172,6 +172,10 @@ impl App {
         }
     }
 
+    pub fn update(&mut self) {
+        self.session.update()
+    }
+
     pub fn draw(&self) {
         let (mx, my) = mouse_position();
         let m_pos = vec2(mx, my);

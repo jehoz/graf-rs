@@ -87,6 +87,22 @@ impl Session {
         }
     }
 
+    pub fn update(&mut self) {
+        let mut device_outputs: HashMap<VertexId, bool> = HashMap::new();
+        for dev_id in self.circuit.vertices() {
+            let inputs: Vec<bool> = self
+                .circuit
+                .parents(*dev_id)
+                .filter_map(|from_id| device_outputs.get(from_id).copied())
+                .collect();
+
+            let dev = self.devices.get_mut(dev_id).unwrap();
+            if let Some(output) = dev.update(inputs) {
+                device_outputs.insert(*dev_id, output);
+            }
+        }
+    }
+
     pub fn draw(&self) {
         for device in self.devices.values() {
             device.draw();

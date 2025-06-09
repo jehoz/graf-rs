@@ -21,7 +21,7 @@ async fn main() {
 
     loop {
         app.handle_inputs();
-
+        app.update();
         app.draw();
 
         next_frame().await
