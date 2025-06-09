@@ -58,23 +58,21 @@ impl App {
                     }
                 }
                 None => {
-                    let wire_under_mouse = self.session.get_wire_at(m_pos);
+                    if is_mouse_button_pressed(MouseButton::Right) {
+                        let wire_under_mouse = self.session.get_wire_at(m_pos);
 
-                    match wire_under_mouse {
-                        Some((from_id, to_id)) => {
-                            if is_mouse_button_pressed(MouseButton::Right) {
+                        match wire_under_mouse {
+                            Some((from_id, to_id)) => {
                                 self.session.disconnect_devices(from_id, to_id);
                                 self.cursor = CursorState::DraggingLooseWire(from_id);
                             }
-                        }
-                        None => {
-                            if is_mouse_button_pressed(MouseButton::Left) {
-                                self.cursor = CursorState::DraggingSelectBox(m_pos);
-                            }
-                            if is_mouse_button_pressed(MouseButton::Right) {
+                            None => {
                                 self.context_menu = Some(m_pos);
                             }
                         }
+                    }
+                    if is_mouse_button_pressed(MouseButton::Left) {
+                        self.cursor = CursorState::DraggingSelectBox(m_pos);
                     }
                 }
             },

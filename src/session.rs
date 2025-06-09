@@ -48,14 +48,19 @@ impl Session {
         const WIRE_CLICKABLE_DISTANCE: f32 = 5.0;
 
         for (from_id, to_id) in self.circuit.edges() {
-            let Vec2 { x: x1, y: y1 } = self.device_position(*from_id).unwrap();
-            let Vec2 { x: x2, y: y2 } = self.device_position(*to_id).unwrap();
+            let u = self.device_position(*from_id).unwrap();
+            let v = self.device_position(*to_id).unwrap();
 
-            // closest distance from point to straight line between devices
-            let dist = ((y2 - y1) * point.x - (x2 - x1) * point.y + x2 * y1 - y2 * x1).abs()
-                / ((y2 - y1).powi(2) + (x2 - x1).powi(2)).sqrt();
+            let len2 = u.distance_squared(v);
 
-            if dist < WIRE_CLICKABLE_DISTANCE {
+            if len2 == 0.0 {
+                return None;
+            }
+
+            let t = ((point - u).dot(v - u) / len2).clamp(0.0, 1.0);
+            let point_on_line = u + t * (v - u);
+
+            if point.distance(point_on_line) < WIRE_CLICKABLE_DISTANCE {
                 return Some((*from_id, *to_id));
             }
         }
