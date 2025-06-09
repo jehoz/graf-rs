@@ -1,8 +1,12 @@
-use macroquad::{color::WHITE, math::Vec2, shapes::draw_circle_lines};
+use macroquad::{
+    color::{BLACK, RED, WHITE},
+    math::Vec2,
+    shapes::{draw_arc, draw_circle, draw_circle_lines},
+};
 
 use super::{Arity, Device, CLOCK_RADIUS};
 
-pub enum Frequency {
+pub enum Period {
     Milliseconds(f32),
     Beats(BeatFraction),
 }
@@ -15,21 +19,25 @@ pub struct BeatFraction {
 pub struct Clock {
     position: Vec2,
 
-    frequency: Frequency,
+    period: Period,
     duty_cycle: f32,
     offset: f32,
+
+    cycle_position: f32,
 }
 
 impl Clock {
     pub fn new(position: Vec2) -> Self {
         Clock {
             position,
-            frequency: Frequency::Beats(BeatFraction {
+            period: Period::Beats(BeatFraction {
                 numerator: 1,
                 denominator: 4,
             }),
             duty_cycle: 0.5,
             offset: 0.,
+
+            cycle_position: 0.0,
         }
     }
 }
@@ -55,6 +63,18 @@ impl Device for Clock {
     fn draw(&self) {
         let Vec2 { x, y } = self.position;
         draw_circle_lines(x, y, CLOCK_RADIUS, 1.0, WHITE);
+        draw_circle(x, y, CLOCK_RADIUS, BLACK);
+
+        draw_arc(
+            x,
+            y,
+            32,
+            0.0,
+            360.0 * self.cycle_position,
+            CLOCK_RADIUS,
+            360.0 * self.duty_cycle,
+            WHITE,
+        );
     }
 
     fn input_arity(&self) -> Arity {
