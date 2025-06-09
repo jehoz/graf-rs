@@ -39,6 +39,20 @@ impl Device for Note {
         self.position.distance(pt) <= NOTE_RADIUS
     }
 
+    fn update(&mut self, inputs: Vec<bool>) -> Option<bool> {
+        if let Some(input_on) = inputs.first() {
+            if *input_on && !self.is_on {
+                // TODO send MIDI message
+                println!("note on");
+                self.is_on = true;
+            } else if !(*input_on) && self.is_on {
+                println!("note off");
+                self.is_on = false;
+            }
+        }
+        None
+    }
+
     fn draw(&self) {
         let Vec2 { x, y } = self.position;
         draw_circle(x, y, NOTE_RADIUS, WHITE);

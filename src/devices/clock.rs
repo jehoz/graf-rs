@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use macroquad::{
     color::{BLACK, RED, WHITE},
     math::Vec2,
@@ -23,6 +25,7 @@ pub struct Clock {
     duty_cycle: f32,
     offset: f32,
 
+    last_timestamp: Instant,
     cycle_position: f32,
 }
 
@@ -37,6 +40,7 @@ impl Clock {
             duty_cycle: 0.5,
             offset: 0.,
 
+            last_timestamp: Instant::now(),
             cycle_position: 0.0,
         }
     }
@@ -58,6 +62,22 @@ impl Device for Clock {
 
     fn is_point_inside(&self, pt: Vec2) -> bool {
         self.position.distance(pt) <= CLOCK_RADIUS
+    }
+
+    fn update(&mut self, _inputs: Vec<bool>) -> Option<bool> {
+        let now = Instant::now();
+        let dt = now.duration_since(self.last_timestamp);
+
+        // let dc = (1000.0 * dt.as_secs_f32()) / self.period
+        let dc = (1000.0 * dt.as_secs_f32()) / 1500.0;
+
+        self.cycle_position = (self.cycle_position + dc) % 1.0;
+
+        if (self.cycle_position - self.offset) % 1.0 <= self.duty_cycle {
+            Some(true)
+        } else {
+            Some(false)
+        }
     }
 
     fn draw(&self) {

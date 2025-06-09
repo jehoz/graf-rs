@@ -54,6 +54,18 @@ impl Device for Gate {
         dx <= GATE_WIDTH && dy <= GATE_WIDTH
     }
 
+    fn update(&mut self, inputs: Vec<bool>) -> Option<bool> {
+        let out = match self.operation {
+            BooleanOperation::AND => inputs.iter().fold(true, |acc, x| acc && *x),
+            BooleanOperation::OR => inputs.iter().fold(false, |acc, x| acc || *x),
+            BooleanOperation::XOR => inputs.iter().fold(false, |acc, x| acc != *x),
+            BooleanOperation::NAND => !inputs.iter().fold(true, |acc, x| acc && *x),
+            BooleanOperation::NOR => !inputs.iter().fold(false, |acc, x| acc || *x),
+            BooleanOperation::XNOR => inputs.iter().fold(false, |acc, x| acc == *x),
+        };
+        Some(out)
+    }
+
     fn draw(&self) {
         let Vec2 { x, y } = self.position;
         draw_rectangle_lines(
