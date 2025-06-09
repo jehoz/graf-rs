@@ -27,16 +27,24 @@ impl Dag {
         }
     }
 
-    pub fn vertices(&self) -> Vertices {
-        Vertices {
-            inner: self.topological_order.iter(),
-        }
+    pub fn vertices(&self) -> impl Iterator<Item = &VertexId> {
+        self.topological_order.iter()
     }
 
-    pub fn edges(&self) -> Edges {
-        Edges {
-            inner: self.edges.iter(),
-        }
+    pub fn edges(&self) -> impl Iterator<Item = &Edge> {
+        self.edges.iter()
+    }
+
+    pub fn parents(&self, child: VertexId) -> impl Iterator<Item = &VertexId> {
+        self.edges.iter().filter_map(
+            move |(from, to)| {
+                if *to == child {
+                    Some(from)
+                } else {
+                    None
+                }
+            },
+        )
     }
 
     pub fn contains_vertex(&self, v: VertexId) -> bool {
@@ -58,24 +66,24 @@ impl Dag {
         // a new vertex can go anywhere in the topo order
         self.topological_order.push(id);
 
-        return id;
+        id
     }
 
     pub fn add_edge(&mut self, e: Edge) -> Result<(), IllegalEdgeError> {
         let (from, to) = e;
 
         if self.contains_edge(e) {
-            return Ok(());
+            Ok(())
         } else if self.is_reachable(to, from) {
             // edge would create cycle
-            return Err(IllegalEdgeError);
+            Err(IllegalEdgeError)
         } else if self.contains_vertex(from) && self.contains_vertex(to) {
             self.edges.push(e);
             self.recompute_caches();
-            return Ok(());
+            Ok(())
         } else {
             // edge includes nonexistent vertices
-            return Err(IllegalEdgeError);
+            Err(IllegalEdgeError)
         }
     }
 
@@ -169,29 +177,5 @@ impl Dag {
         }
 
         self.topological_order = topo;
-    }
-}
-
-pub struct Vertices<'a> {
-    inner: std::slice::Iter<'a, VertexId>,
-}
-
-impl<'a> Iterator for Vertices<'a> {
-    type Item = &'a VertexId;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
-    }
-}
-
-pub struct Edges<'a> {
-    inner: std::slice::Iter<'a, Edge>,
-}
-
-impl<'a> Iterator for Edges<'a> {
-    type Item = &'a Edge;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
     }
 }
