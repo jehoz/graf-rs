@@ -88,6 +88,10 @@ impl Device for Gate {
         draw_AND(x, y, GATE_WIDTH * 0.5);
     }
 
+    fn inspector(&mut self, ui: &mut macroquad::ui::Ui) {
+        todo!()
+    }
+
     fn input_arity(&self) -> Arity {
         Arity::NAry
     }

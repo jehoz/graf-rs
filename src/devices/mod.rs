@@ -1,4 +1,4 @@
-use macroquad::prelude::Vec2;
+use macroquad::{prelude::Vec2, ui::Ui};
 
 pub mod clock;
 pub mod gate;
@@ -24,6 +24,7 @@ pub trait Device {
 
     fn update(&mut self, inputs: Vec<bool>) -> Option<bool>;
     fn draw(&self);
+    fn inspector(&mut self, ui: &mut Ui);
 
     // number of input wires that can be plugged into the device
     fn input_arity(&self) -> Arity;

@@ -64,6 +64,10 @@ impl Device for Note {
         }
     }
 
+    fn inspector(&mut self, ui: &mut macroquad::ui::Ui) {
+        todo!()
+    }
+
     fn input_arity(&self) -> Arity {
         Arity::Unary
     }
