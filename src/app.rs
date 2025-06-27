@@ -1,7 +1,10 @@
+use core::panic;
+
 use macroquad::{
     color::{BLACK, RED, WHITE},
     input::{is_mouse_button_pressed, is_mouse_button_released, mouse_position, MouseButton},
     math::{vec2, Vec2},
+    miniquad::window::screen_size,
     shapes::draw_rectangle_lines,
     ui::{hash, root_ui, widgets::Window},
     window::clear_background,
@@ -23,12 +26,15 @@ enum CursorState {
     DraggingSelectBox(Vec2),
 }
 
+const INSPECTOR_WIDTH: f32 = 300.0;
+
 pub struct App {
     session: Session,
     cursor: CursorState,
     selected: Vec<DeviceId>,
 
     context_menu: Option<Vec2>,
+    inspector: Option<DeviceId>,
 }
 
 impl App {
@@ -39,6 +45,7 @@ impl App {
             selected: Vec::new(),
 
             context_menu: None,
+            inspector: None,
         }
     }
 
@@ -52,6 +59,8 @@ impl App {
                 Some(id) => {
                     if is_mouse_button_pressed(MouseButton::Left) {
                         self.cursor = CursorState::DraggingDevice(id);
+
+                        self.inspector = Some(id);
                     }
                     if is_mouse_button_pressed(MouseButton::Right) {
                         self.cursor = CursorState::DraggingLooseWire(id);
@@ -173,7 +182,25 @@ impl App {
     }
 
     pub fn update(&mut self) {
-        self.session.update()
+        self.session.update();
+
+        if let Some(dev_id) = self.inspector {
+            let (w, h) = screen_size();
+            match self.session.devices.get_mut(&dev_id) {
+                Some(dev) => {
+                    Window::new(
+                        hash!(),
+                        vec2(w - INSPECTOR_WIDTH, 0.0),
+                        vec2(INSPECTOR_WIDTH, h),
+                    )
+                    .movable(false)
+                    .ui(&mut *root_ui(), |ui| dev.inspector(ui));
+                }
+                None => {
+                    panic!("Tried to inspect device that doesn't exist???")
+                }
+            }
+        }
     }
 
     pub fn draw(&self) {

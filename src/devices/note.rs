@@ -65,7 +65,8 @@ impl Device for Note {
     }
 
     fn inspector(&mut self, ui: &mut macroquad::ui::Ui) {
-        todo!()
+        ui.label(None, "Edit Note");
+        ui.label(None, "TODO");
     }
 
     fn input_arity(&self) -> Arity {

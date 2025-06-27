@@ -4,6 +4,7 @@ use macroquad::{
     color::{BLACK, RED, WHITE},
     math::Vec2,
     shapes::{draw_arc, draw_circle, draw_circle_lines},
+    ui::hash,
 };
 
 use super::{Arity, Device, CLOCK_RADIUS};
@@ -99,7 +100,22 @@ impl Device for Clock {
     }
 
     fn inspector(&mut self, ui: &mut macroquad::ui::Ui) {
-        todo!()
+        ui.label(None, "Edit Clock");
+        ui.separator();
+        match &mut self.period {
+            Period::Milliseconds(ms) => {
+                ui.slider(hash!(), "Period", 1f32..10000f32, ms);
+            }
+            Period::Beats(_) => {
+                ui.label(None, "Unsupported beat fraction period type");
+            }
+        }
+
+        ui.separator();
+        ui.slider(hash!(), "Duty Cycle", 0f32..1.0f32, &mut self.duty_cycle);
+
+        ui.separator();
+        ui.slider(hash!(), "Offset", 0f32..1.0f32, &mut self.offset);
     }
 
     fn input_arity(&self) -> Arity {

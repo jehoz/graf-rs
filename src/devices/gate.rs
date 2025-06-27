@@ -89,7 +89,8 @@ impl Device for Gate {
     }
 
     fn inspector(&mut self, ui: &mut macroquad::ui::Ui) {
-        todo!()
+        ui.label(None, "Edit Gate");
+        ui.label(None, "TODO");
     }
 
     fn input_arity(&self) -> Arity {
