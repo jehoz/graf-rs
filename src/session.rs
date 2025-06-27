@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use macroquad::{color::WHITE, math::Vec2};
 
 use crate::{
-    dag::{Dag, Edge, VertexId},
+    dag::{Dag, DeviceId, Edge},
     devices::{Arity, Device},
     drawing_utils::draw_wire_between_devices,
 };
 
 pub struct Session {
-    pub devices: HashMap<VertexId, Box<dyn Device>>,
+    pub devices: HashMap<DeviceId, Box<dyn Device>>,
     pub circuit: Dag,
 }
 
@@ -26,16 +26,16 @@ impl Session {
         self.devices.insert(id, device);
     }
 
-    pub fn connect_devices(&mut self, from: VertexId, to: VertexId) {
+    pub fn connect_devices(&mut self, from: DeviceId, to: DeviceId) {
         // just silently ignore any errors for now
         let _ = self.circuit.add_edge((from, to));
     }
 
-    pub fn disconnect_devices(&mut self, from: VertexId, to: VertexId) {
+    pub fn disconnect_devices(&mut self, from: DeviceId, to: DeviceId) {
         self.circuit.remove_edge((from, to))
     }
 
-    pub fn get_device_at(&self, point: Vec2) -> Option<VertexId> {
+    pub fn get_device_at(&self, point: Vec2) -> Option<DeviceId> {
         for (id, device) in self.devices.iter() {
             if device.is_point_inside(point) {
                 return Some(*id);
@@ -68,7 +68,7 @@ impl Session {
         None
     }
 
-    pub fn can_connect(&self, from: VertexId, to: VertexId) -> bool {
+    pub fn can_connect(&self, from: DeviceId, to: DeviceId) -> bool {
         let to_dev = self.devices.get(&to).unwrap();
         if to_dev.input_arity() == Arity::Nullary {
             return false;
@@ -77,18 +77,18 @@ impl Session {
         !self.circuit.is_reachable(to, from)
     }
 
-    pub fn device_position(&self, id: VertexId) -> Option<Vec2> {
+    pub fn device_position(&self, id: DeviceId) -> Option<Vec2> {
         self.devices.get(&id).map(|d| d.get_position())
     }
 
-    pub fn move_device(&mut self, device_id: VertexId, position: Vec2) {
+    pub fn move_device(&mut self, device_id: DeviceId, position: Vec2) {
         if let Some(device) = self.devices.get_mut(&device_id) {
             device.set_position(position);
         }
     }
 
     pub fn update(&mut self) {
-        let mut device_outputs: HashMap<VertexId, bool> = HashMap::new();
+        let mut device_outputs: HashMap<DeviceId, bool> = HashMap::new();
         for dev_id in self.circuit.vertices() {
             let inputs: Vec<bool> = self
                 .circuit

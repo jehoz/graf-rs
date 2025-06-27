@@ -8,7 +8,7 @@ use macroquad::{
 };
 
 use crate::{
-    dag::VertexId,
+    dag::DeviceId,
     devices::{clock::Clock, gate::Gate, note::Note},
     drawing_utils::{draw_wire_between_devices, draw_wire_from_device},
     session::Session,
@@ -16,17 +16,17 @@ use crate::{
 
 enum CursorState {
     Idle,
-    DraggingDevice(VertexId),
-    DraggingLooseWire(VertexId),
-    DraggingConnectedWire(VertexId, VertexId),
-    DraggingInvalidWire(VertexId),
+    DraggingDevice(DeviceId),
+    DraggingLooseWire(DeviceId),
+    DraggingConnectedWire(DeviceId, DeviceId),
+    DraggingInvalidWire(DeviceId),
     DraggingSelectBox(Vec2),
 }
 
 pub struct App {
     session: Session,
     cursor: CursorState,
-    selected: Vec<VertexId>,
+    selected: Vec<DeviceId>,
 
     context_menu: Option<Vec2>,
 }

@@ -4,16 +4,16 @@ use std::{
 };
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
-pub struct VertexId(u32);
+pub struct DeviceId(u32);
 
-pub type Edge = (VertexId, VertexId);
+pub type Edge = (DeviceId, DeviceId);
 
 pub struct IllegalEdgeError;
 
 pub struct Dag {
     id_counter: u32,
     edges: Vec<Edge>,
-    topological_order: Vec<VertexId>,
+    topological_order: Vec<DeviceId>,
     transitive_closure: Vec<Edge>,
 }
 
@@ -27,7 +27,7 @@ impl Dag {
         }
     }
 
-    pub fn vertices(&self) -> impl Iterator<Item = &VertexId> {
+    pub fn vertices(&self) -> impl Iterator<Item = &DeviceId> {
         self.topological_order.iter()
     }
 
@@ -35,7 +35,7 @@ impl Dag {
         self.edges.iter()
     }
 
-    pub fn parents(&self, child: VertexId) -> impl Iterator<Item = &VertexId> {
+    pub fn parents(&self, child: DeviceId) -> impl Iterator<Item = &DeviceId> {
         self.edges.iter().filter_map(
             move |(from, to)| {
                 if *to == child {
@@ -47,7 +47,7 @@ impl Dag {
         )
     }
 
-    pub fn contains_vertex(&self, v: VertexId) -> bool {
+    pub fn contains_vertex(&self, v: DeviceId) -> bool {
         self.topological_order.contains(&v)
     }
 
@@ -55,12 +55,12 @@ impl Dag {
         self.edges.contains(&e)
     }
 
-    pub fn is_reachable(&self, from: VertexId, to: VertexId) -> bool {
+    pub fn is_reachable(&self, from: DeviceId, to: DeviceId) -> bool {
         self.transitive_closure.contains(&(from, to))
     }
 
-    pub fn add_vertex(&mut self) -> VertexId {
-        let id = VertexId(self.id_counter);
+    pub fn add_vertex(&mut self) -> DeviceId {
+        let id = DeviceId(self.id_counter);
         self.id_counter += 1;
 
         // a new vertex can go anywhere in the topo order
@@ -87,7 +87,7 @@ impl Dag {
         }
     }
 
-    pub fn remove_vertex(&mut self, v: VertexId) {
+    pub fn remove_vertex(&mut self, v: DeviceId) {
         self.edges.retain(|(from, to)| *from != v && *to != v);
         self.topological_order.retain(|x| *x != v);
 
