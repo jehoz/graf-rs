@@ -76,9 +76,9 @@ impl Device for Clock {
             }
         };
 
-        self.cycle_position = (time_ms % period_ms) / period_ms;
+        self.cycle_position = ((time_ms + self.offset * period_ms) % period_ms) / period_ms;
 
-        if (self.cycle_position - self.offset) % 1.0 <= self.duty_cycle {
+        if self.cycle_position <= self.duty_cycle {
             Some(true)
         } else {
             Some(false)
