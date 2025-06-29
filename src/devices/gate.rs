@@ -1,9 +1,9 @@
 use macroquad::{
-    color::{BLACK, WHITE},
-    math::{vec2, Vec2},
+    math::Vec2,
     shapes::{draw_circle, draw_circle_lines, draw_line, draw_rectangle, draw_rectangle_lines},
-    text::draw_text,
 };
+
+use crate::session::{DrawContext, UpdateContext};
 
 use super::{Arity, Device, GATE_WIDTH};
 
@@ -55,7 +55,7 @@ impl Device for Gate {
         dx <= GATE_WIDTH && dy <= GATE_WIDTH
     }
 
-    fn update(&mut self, inputs: Vec<bool>) -> Option<bool> {
+    fn update(&mut self, _ctx: &UpdateContext, inputs: Vec<bool>) -> Option<bool> {
         let out = match self.operation {
             BooleanOperation::AND => inputs.iter().fold(true, |acc, x| acc && *x),
             BooleanOperation::OR => inputs.iter().fold(false, |acc, x| acc || *x),
@@ -67,14 +67,14 @@ impl Device for Gate {
         Some(out)
     }
 
-    fn draw(&self) {
+    fn draw(&self, ctx: &DrawContext) {
         let Vec2 { x, y } = self.position;
         draw_rectangle(
             x - GATE_WIDTH / 2.,
             y - GATE_WIDTH / 2.,
             GATE_WIDTH,
             GATE_WIDTH,
-            BLACK,
+            ctx.bg_color,
         );
         draw_rectangle_lines(
             x - GATE_WIDTH / 2.,
@@ -82,10 +82,10 @@ impl Device for Gate {
             GATE_WIDTH,
             GATE_WIDTH,
             2.0,
-            WHITE,
+            ctx.fg_color,
         );
 
-        draw_symbol(x, y, GATE_WIDTH * 0.5, &self.operation);
+        draw_symbol(ctx, x, y, GATE_WIDTH * 0.5, &self.operation);
     }
 
     fn inspector(&mut self, ui: &mut macroquad::ui::Ui) {
@@ -119,7 +119,7 @@ impl Device for Gate {
     }
 }
 
-fn draw_symbol(x: f32, y: f32, scale: f32, op: &BooleanOperation) {
+fn draw_symbol(ctx: &DrawContext, x: f32, y: f32, scale: f32, op: &BooleanOperation) {
     let top = y - scale / 2.0;
     let bottom = y + scale / 2.0;
     let left = x - scale / 2.0;
@@ -127,64 +127,64 @@ fn draw_symbol(x: f32, y: f32, scale: f32, op: &BooleanOperation) {
 
     match op {
         BooleanOperation::AND => {
-            draw_line(left, bottom, x, top, 1.0, WHITE);
-            draw_line(x, top, right, bottom, 1.0, WHITE);
+            draw_line(left, bottom, x, top, 1.0, ctx.fg_color);
+            draw_line(x, top, right, bottom, 1.0, ctx.fg_color);
 
-            draw_circle(left, bottom, 2.0, WHITE);
-            draw_circle(right, bottom, 2.0, WHITE);
-            draw_circle(x, top, 2.0, WHITE);
+            draw_circle(left, bottom, 2.0, ctx.fg_color);
+            draw_circle(right, bottom, 2.0, ctx.fg_color);
+            draw_circle(x, top, 2.0, ctx.fg_color);
         }
         BooleanOperation::OR => {
-            draw_line(left, top, x, bottom, 1.0, WHITE);
-            draw_line(x, bottom, right, top, 1.0, WHITE);
+            draw_line(left, top, x, bottom, 1.0, ctx.fg_color);
+            draw_line(x, bottom, right, top, 1.0, ctx.fg_color);
 
-            draw_circle(left, top, 2.0, WHITE);
-            draw_circle(right, top, 2.0, WHITE);
-            draw_circle(x, bottom, 2.0, WHITE);
+            draw_circle(left, top, 2.0, ctx.fg_color);
+            draw_circle(right, top, 2.0, ctx.fg_color);
+            draw_circle(x, bottom, 2.0, ctx.fg_color);
         }
         BooleanOperation::XOR => {
-            draw_circle_lines(x, y, scale / 2.0, 1.0, WHITE);
-            draw_line(x, top, x, bottom, 1.0, WHITE);
-            draw_line(left, y, right, y, 1.0, WHITE);
+            draw_circle_lines(x, y, scale / 2.0, 1.0, ctx.fg_color);
+            draw_line(x, top, x, bottom, 1.0, ctx.fg_color);
+            draw_line(left, y, right, y, 1.0, ctx.fg_color);
 
-            draw_circle(x, top, 2.0, WHITE);
-            draw_circle(x, bottom, 2.0, WHITE);
-            draw_circle(left, y, 2.0, WHITE);
-            draw_circle(right, y, 2.0, WHITE);
+            draw_circle(x, top, 2.0, ctx.fg_color);
+            draw_circle(x, bottom, 2.0, ctx.fg_color);
+            draw_circle(left, y, 2.0, ctx.fg_color);
+            draw_circle(right, y, 2.0, ctx.fg_color);
         }
         BooleanOperation::NAND => {
-            draw_line(left, bottom, x, y, 1.0, WHITE);
-            draw_line(x, y, right, bottom, 1.0, WHITE);
-            draw_line(left, top, right, top, 1.0, WHITE);
+            draw_line(left, bottom, x, y, 1.0, ctx.fg_color);
+            draw_line(x, y, right, bottom, 1.0, ctx.fg_color);
+            draw_line(left, top, right, top, 1.0, ctx.fg_color);
 
-            draw_circle(left, bottom, 2.0, WHITE);
-            draw_circle(right, bottom, 2.0, WHITE);
-            draw_circle(x, y, 2.0, WHITE);
-            draw_circle(left, top, 2.0, WHITE);
-            draw_circle(right, top, 2.0, WHITE);
+            draw_circle(left, bottom, 2.0, ctx.fg_color);
+            draw_circle(right, bottom, 2.0, ctx.fg_color);
+            draw_circle(x, y, 2.0, ctx.fg_color);
+            draw_circle(left, top, 2.0, ctx.fg_color);
+            draw_circle(right, top, 2.0, ctx.fg_color);
         }
         BooleanOperation::NOR => {
-            draw_line(left, y, x, bottom, 1.0, WHITE);
-            draw_line(x, bottom, right, y, 1.0, WHITE);
-            draw_line(left, top, right, top, 1.0, WHITE);
+            draw_line(left, y, x, bottom, 1.0, ctx.fg_color);
+            draw_line(x, bottom, right, y, 1.0, ctx.fg_color);
+            draw_line(left, top, right, top, 1.0, ctx.fg_color);
 
-            draw_circle(left, y, 2.0, WHITE);
-            draw_circle(right, y, 2.0, WHITE);
-            draw_circle(x, bottom, 2.0, WHITE);
-            draw_circle(left, top, 2.0, WHITE);
-            draw_circle(right, top, 2.0, WHITE);
+            draw_circle(left, y, 2.0, ctx.fg_color);
+            draw_circle(right, y, 2.0, ctx.fg_color);
+            draw_circle(x, bottom, 2.0, ctx.fg_color);
+            draw_circle(left, top, 2.0, ctx.fg_color);
+            draw_circle(right, top, 2.0, ctx.fg_color);
         }
         BooleanOperation::XNOR => {
-            draw_line(left, top, right, top, 1.0, WHITE);
-            draw_line(left, y, right, y, 1.0, WHITE);
-            draw_line(left, bottom, right, bottom, 1.0, WHITE);
+            draw_line(left, top, right, top, 1.0, ctx.fg_color);
+            draw_line(left, y, right, y, 1.0, ctx.fg_color);
+            draw_line(left, bottom, right, bottom, 1.0, ctx.fg_color);
 
-            draw_circle(left, top, 2.0, WHITE);
-            draw_circle(right, top, 2.0, WHITE);
-            draw_circle(left, y, 2.0, WHITE);
-            draw_circle(right, y, 2.0, WHITE);
-            draw_circle(left, bottom, 2.0, WHITE);
-            draw_circle(right, bottom, 2.0, WHITE);
+            draw_circle(left, top, 2.0, ctx.fg_color);
+            draw_circle(right, top, 2.0, ctx.fg_color);
+            draw_circle(left, y, 2.0, ctx.fg_color);
+            draw_circle(right, y, 2.0, ctx.fg_color);
+            draw_circle(left, bottom, 2.0, ctx.fg_color);
+            draw_circle(right, bottom, 2.0, ctx.fg_color);
         }
     }
 }

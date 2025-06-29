@@ -1,11 +1,12 @@
 use std::time::Instant;
 
 use macroquad::{
-    color::{BLACK, RED, WHITE},
     math::Vec2,
     shapes::{draw_arc, draw_circle, draw_circle_lines},
     ui::hash,
 };
+
+use crate::session::{DrawContext, UpdateContext};
 
 use super::{Arity, Device, CLOCK_RADIUS};
 
@@ -65,7 +66,7 @@ impl Device for Clock {
         self.position.distance(pt) <= CLOCK_RADIUS
     }
 
-    fn update(&mut self, _inputs: Vec<bool>) -> Option<bool> {
+    fn update(&mut self, ctx: &UpdateContext, _inputs: Vec<bool>) -> Option<bool> {
         let now = Instant::now();
         let dt = now.duration_since(self.last_timestamp);
 
@@ -82,10 +83,10 @@ impl Device for Clock {
         }
     }
 
-    fn draw(&self) {
+    fn draw(&self, ctx: &DrawContext) {
         let Vec2 { x, y } = self.position;
-        draw_circle_lines(x, y, CLOCK_RADIUS, 1.0, WHITE);
-        draw_circle(x, y, CLOCK_RADIUS, BLACK);
+        draw_circle_lines(x, y, CLOCK_RADIUS, 1.0, ctx.fg_color);
+        draw_circle(x, y, CLOCK_RADIUS, ctx.bg_color);
 
         draw_arc(
             x,
@@ -95,7 +96,7 @@ impl Device for Clock {
             360.0 * self.cycle_position,
             CLOCK_RADIUS,
             360.0 * self.duty_cycle,
-            WHITE,
+            ctx.fg_color,
         );
     }
 

@@ -1,6 +1,9 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Instant};
 
-use macroquad::{color::WHITE, math::Vec2};
+use macroquad::{
+    color::{Color, BLACK, RED, WHITE},
+    math::Vec2,
+};
 
 use crate::{
     dag::{Dag, DeviceId, Edge},
@@ -8,9 +11,43 @@ use crate::{
     drawing_utils::draw_wire_between_devices,
 };
 
+pub struct UpdateContext {
+    pub t0: Instant,
+
+    pub bpm: u32,
+}
+
+impl UpdateContext {
+    pub fn new() -> Self {
+        UpdateContext {
+            t0: Instant::now(),
+            bpm: 120,
+        }
+    }
+}
+
+pub struct DrawContext {
+    pub fg_color: Color,
+    pub bg_color: Color,
+    pub err_color: Color,
+}
+
+impl DrawContext {
+    pub fn new() -> Self {
+        DrawContext {
+            fg_color: WHITE,
+            bg_color: BLACK,
+            err_color: RED,
+        }
+    }
+}
+
 pub struct Session {
     pub devices: HashMap<DeviceId, Box<dyn Device>>,
     pub circuit: Dag,
+
+    pub update_ctx: UpdateContext,
+    pub draw_ctx: DrawContext,
 }
 
 impl Session {
@@ -18,6 +55,9 @@ impl Session {
         Session {
             devices: HashMap::new(),
             circuit: Dag::new(),
+
+            update_ctx: UpdateContext::new(),
+            draw_ctx: DrawContext::new(),
         }
     }
 
@@ -97,7 +137,7 @@ impl Session {
                 .collect();
 
             let dev = self.devices.get_mut(dev_id).unwrap();
-            if let Some(output) = dev.update(inputs) {
+            if let Some(output) = dev.update(&self.update_ctx, inputs) {
                 device_outputs.insert(*dev_id, output);
             }
         }
@@ -105,7 +145,7 @@ impl Session {
 
     pub fn draw(&self) {
         for device in self.devices.values() {
-            device.draw();
+            device.draw(&self.draw_ctx);
         }
 
         for (from_id, to_id) in self.circuit.edges() {

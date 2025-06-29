@@ -1,8 +1,9 @@
 use macroquad::{
-    color::WHITE,
     math::Vec2,
     shapes::{draw_circle, draw_circle_lines},
 };
+
+use crate::session::{DrawContext, Session, UpdateContext};
 
 use super::{Arity, Device, NOTE_RADIUS};
 
@@ -43,7 +44,7 @@ impl Device for Note {
         self.position.distance(pt) <= NOTE_RADIUS
     }
 
-    fn update(&mut self, inputs: Vec<bool>) -> Option<bool> {
+    fn update(&mut self, ctx: &UpdateContext, inputs: Vec<bool>) -> Option<bool> {
         if let Some(input_on) = inputs.first() {
             if *input_on && !self.is_on {
                 // TODO send MIDI message
@@ -56,11 +57,11 @@ impl Device for Note {
         None
     }
 
-    fn draw(&self) {
+    fn draw(&self, ctx: &DrawContext) {
         let Vec2 { x, y } = self.position;
-        draw_circle_lines(x, y, NOTE_RADIUS, 1.0, WHITE);
+        draw_circle_lines(x, y, NOTE_RADIUS, 1.0, ctx.fg_color);
         if self.is_on {
-            draw_circle(x, y, NOTE_RADIUS / 2.0, WHITE);
+            draw_circle(x, y, NOTE_RADIUS / 2.0, ctx.fg_color);
         }
     }
 
