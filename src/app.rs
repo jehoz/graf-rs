@@ -1,7 +1,6 @@
 use core::panic;
 
 use macroquad::{
-    color::{BLACK, RED, WHITE},
     input::{is_mouse_button_pressed, is_mouse_button_released, mouse_position, MouseButton},
     math::{vec2, Vec2},
     miniquad::window::screen_size,
@@ -207,28 +206,39 @@ impl App {
         let (mx, my) = mouse_position();
         let m_pos = vec2(mx, my);
 
-        clear_background(BLACK);
+        clear_background(self.session.draw_ctx.bg_color);
 
         match self.cursor {
             CursorState::Idle | CursorState::DraggingDevice(_) => {}
             CursorState::DraggingLooseWire(from_id) => {
                 let from_dev = self.session.devices.get(&from_id).unwrap();
-                draw_wire_from_device(from_dev.as_ref(), m_pos, WHITE);
+                draw_wire_from_device(from_dev.as_ref(), m_pos, self.session.draw_ctx.fg_color);
             }
             CursorState::DraggingConnectedWire(from_id, to_id) => {
                 let from_dev = self.session.devices.get(&from_id).unwrap();
                 let to_dev = self.session.devices.get(&to_id).unwrap();
-                draw_wire_between_devices(from_dev.as_ref(), to_dev.as_ref(), WHITE);
+                draw_wire_between_devices(
+                    from_dev.as_ref(),
+                    to_dev.as_ref(),
+                    self.session.draw_ctx.fg_color,
+                );
             }
             CursorState::DraggingInvalidWire(from_id) => {
                 let from_dev = self.session.devices.get(&from_id).unwrap();
-                draw_wire_from_device(from_dev.as_ref(), m_pos, RED);
+                draw_wire_from_device(from_dev.as_ref(), m_pos, self.session.draw_ctx.err_color);
             }
             CursorState::DraggingSelectBox(starting_corner) => {
                 let top = f32::min(starting_corner.y, m_pos.y);
                 let left = f32::min(starting_corner.x, m_pos.x);
                 let delta = (m_pos - starting_corner).abs();
-                draw_rectangle_lines(left, top, delta.x, delta.y, 1.0, WHITE);
+                draw_rectangle_lines(
+                    left,
+                    top,
+                    delta.x,
+                    delta.y,
+                    1.0,
+                    self.session.draw_ctx.fg_color,
+                );
             }
         }
 

@@ -151,7 +151,7 @@ impl Session {
         for (from_id, to_id) in self.circuit.edges() {
             let from_dev = self.devices.get(&from_id).unwrap();
             let to_dev = self.devices.get(&to_id).unwrap();
-            draw_wire_between_devices(from_dev.as_ref(), to_dev.as_ref(), WHITE);
+            draw_wire_between_devices(from_dev.as_ref(), to_dev.as_ref(), self.draw_ctx.fg_color);
         }
     }
 }
