@@ -12,12 +12,7 @@ use super::{Arity, Device, CLOCK_RADIUS};
 
 pub enum Period {
     Milliseconds(f32),
-    Beats(BeatFraction),
-}
-
-pub struct BeatFraction {
-    numerator: u16,
-    denominator: u16,
+    NoteLength { numerator: u32, denominator: u32 },
 }
 
 pub struct Clock {
@@ -35,10 +30,10 @@ impl Clock {
     pub fn new(position: Vec2) -> Self {
         Clock {
             position,
-            period: Period::Beats(BeatFraction {
+            period: Period::NoteLength {
                 numerator: 1,
                 denominator: 4,
-            }),
+            },
             duty_cycle: 0.5,
             offset: 0.,
 
@@ -68,13 +63,20 @@ impl Device for Clock {
 
     fn update(&mut self, ctx: &UpdateContext, _inputs: Vec<bool>) -> Option<bool> {
         let now = Instant::now();
-        let dt = now.duration_since(self.last_timestamp);
+        let time_ms = now.duration_since(ctx.t0).as_secs_f32() * 1000.0;
 
-        // let dc = (1000.0 * dt.as_secs_f32()) / self.period
-        let dc = (1000.0 * dt.as_secs_f32()) / 1500.0;
+        let period_ms = match self.period {
+            Period::Milliseconds(ms) => ms,
+            Period::NoteLength {
+                numerator,
+                denominator,
+            } => {
+                let ms_per_note = 240_000.0 / (ctx.bpm as f32);
+                (numerator as f32 / denominator as f32) * ms_per_note
+            }
+        };
 
-        self.last_timestamp = now;
-        self.cycle_position = (self.cycle_position + dc) % 1.0;
+        self.cycle_position = (time_ms % period_ms) / period_ms;
 
         if (self.cycle_position - self.offset) % 1.0 <= self.duty_cycle {
             Some(true)
@@ -107,8 +109,12 @@ impl Device for Clock {
             Period::Milliseconds(ms) => {
                 ui.slider(hash!(), "Period", 1f32..10000f32, ms);
             }
-            Period::Beats(_) => {
-                ui.label(None, "Unsupported beat fraction period type");
+            Period::NoteLength {
+                numerator,
+                denominator,
+            } => {
+                ui.drag(hash!(), "Numerator", Some((1, 256)), numerator);
+                ui.drag(hash!(), "Denominator", Some((1, 256)), denominator);
             }
         }
 
