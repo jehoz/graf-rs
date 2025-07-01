@@ -4,17 +4,21 @@ use macroquad::{
     color::{Color, BLACK, RED, WHITE},
     math::Vec2,
 };
+use midir::MidiOutputConnection;
 
 use crate::{
     dag::{Dag, DeviceId, Edge},
     devices::{Arity, Device},
     drawing_utils::draw_wire_between_devices,
+    midi::MidiConfig,
 };
 
 pub struct UpdateContext {
     pub t0: Instant,
 
     pub bpm: u32,
+
+    pub midi_config: MidiConfig,
 }
 
 impl UpdateContext {
@@ -22,6 +26,8 @@ impl UpdateContext {
         UpdateContext {
             t0: Instant::now(),
             bpm: 120,
+
+            midi_config: MidiConfig::new(),
         }
     }
 }
