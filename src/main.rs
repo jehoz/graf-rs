@@ -5,6 +5,7 @@ mod app;
 mod dag;
 mod devices;
 mod drawing_utils;
+mod midi;
 mod session;
 
 fn window_conf() -> Conf {
