@@ -143,7 +143,7 @@ impl Session {
                 .collect();
 
             let dev = self.devices.get_mut(dev_id).unwrap();
-            if let Some(output) = dev.update(&self.update_ctx, inputs) {
+            if let Some(output) = dev.update(&mut self.update_ctx, inputs) {
                 device_outputs.insert(*dev_id, output);
             }
         }

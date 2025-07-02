@@ -55,7 +55,7 @@ impl Device for Gate {
         dx <= GATE_WIDTH && dy <= GATE_WIDTH
     }
 
-    fn update(&mut self, _ctx: &UpdateContext, inputs: Vec<bool>) -> Option<bool> {
+    fn update(&mut self, _ctx: &mut UpdateContext, inputs: Vec<bool>) -> Option<bool> {
         let out = match self.operation {
             BooleanOperation::AND => inputs.iter().fold(true, |acc, x| acc && *x),
             BooleanOperation::OR => inputs.iter().fold(false, |acc, x| acc || *x),

@@ -61,7 +61,7 @@ impl Device for Clock {
         self.position.distance(pt) <= CLOCK_RADIUS
     }
 
-    fn update(&mut self, ctx: &UpdateContext, _inputs: Vec<bool>) -> Option<bool> {
+    fn update(&mut self, ctx: &mut UpdateContext, _inputs: Vec<bool>) -> Option<bool> {
         let now = Instant::now();
         let time_ms = now.duration_since(ctx.t0).as_secs_f32() * 1000.0;
 
