@@ -44,13 +44,13 @@ impl Device for Note {
         self.position.distance(pt) <= NOTE_RADIUS
     }
 
-    fn update(&mut self, ctx: &UpdateContext, inputs: Vec<bool>) -> Option<bool> {
+    fn update(&mut self, ctx: &mut UpdateContext, inputs: Vec<bool>) -> Option<bool> {
         if let Some(input_on) = inputs.first() {
             if *input_on && !self.is_on {
-                // TODO send MIDI message
+                ctx.midi_config.note_on(self.midi_note, self.velocity);
                 self.is_on = true;
             } else if !(*input_on) && self.is_on {
-                // TODO send MIDI message
+                ctx.midi_config.note_off(self.midi_note, self.velocity);
                 self.is_on = false;
             }
         }
