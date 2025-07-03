@@ -1,6 +1,7 @@
 use std::io::{stdin, stdout, Write};
 
 use midir::{MidiOutput, MidiOutputConnection, MidiOutputPorts};
+use midly::live::LiveEvent;
 
 pub struct MidiConfig {
     // pub midi_out: MidiOutput,
@@ -45,16 +46,14 @@ impl MidiConfig {
         }
     }
 
-    pub fn note_on(&mut self, note: u8, velocity: u8) {
+    pub fn handle_live_event(&mut self, event: LiveEvent) {
         match &mut self.connection {
-            Some(conn) => conn.send(&[0x90, note, velocity]).unwrap(),
-            None => println!("Tried to send MIDI message but no connection"),
-        }
-    }
+            Some(conn) => {
+                let mut buf = Vec::new();
+                event.write(&mut buf).unwrap();
+                conn.send(&buf).unwrap();
+            }
 
-    pub fn note_off(&mut self, note: u8, velocity: u8) {
-        match &mut self.connection {
-            Some(conn) => conn.send(&[0x80, note, velocity]).unwrap(),
             None => println!("Tried to send MIDI message but no connection"),
         }
     }
