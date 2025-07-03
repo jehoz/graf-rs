@@ -1,9 +1,10 @@
 use macroquad::{
     math::Vec2,
     shapes::{draw_circle, draw_circle_lines},
+    ui::hash,
 };
 
-use crate::session::{DrawContext, Session, UpdateContext};
+use crate::session::{DrawContext, UpdateContext};
 
 use super::{Arity, Device, NOTE_RADIUS};
 
@@ -67,7 +68,10 @@ impl Device for Note {
 
     fn inspector(&mut self, ui: &mut macroquad::ui::Ui) {
         ui.label(None, "Edit Note");
-        ui.label(None, "TODO");
+        ui.separator();
+        let mut note = self.midi_note as f32;
+        ui.slider(hash!(), "Note", 0.0..127.0, &mut note);
+        self.midi_note = note.round() as u8;
     }
 
     fn input_arity(&self) -> Arity {
