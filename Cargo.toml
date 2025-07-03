@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 macroquad = "0.4.13"
 midir = "0.10.1"
+midly = "0.5.3"
