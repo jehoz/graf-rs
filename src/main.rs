@@ -21,9 +21,30 @@ async fn main() {
     let mut app = App::new();
 
     loop {
-        app.handle_inputs();
+        let mut egui_wants_pointer = false;
+
+        egui_macroquad::ui(|egui_ctx| {
+            egui::SidePanel::left("devices_panel")
+                .show(egui_ctx, |ui| {
+                    ui.label("");
+                });
+            egui::SidePanel::right("inspector_panel")
+                .show(egui_ctx, |ui| {
+                    ui.label("asdf");
+                });
+
+            if egui_ctx.wants_pointer_input() {
+                egui_wants_pointer = true;
+            }
+        });
+
+        if !egui_wants_pointer  {
+            app.handle_inputs();
+        }
         app.update();
         app.draw();
+
+        egui_macroquad::draw();
 
         next_frame().await
     }
