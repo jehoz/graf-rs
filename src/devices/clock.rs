@@ -19,10 +19,9 @@ pub struct Clock {
     position: Vec2,
 
     period: Period,
-    duty_cycle: f32,
+    gate: f32,
     offset: f32,
 
-    last_timestamp: Instant,
     cycle_position: f32,
 }
 
@@ -34,10 +33,9 @@ impl Clock {
                 numerator: 1,
                 denominator: 4,
             },
-            duty_cycle: 0.5,
+            gate: 0.5,
             offset: 0.,
 
-            last_timestamp: Instant::now(),
             cycle_position: 0.0,
         }
     }
@@ -78,7 +76,7 @@ impl Device for Clock {
 
         self.cycle_position = ((time_ms + self.offset * period_ms) % period_ms) / period_ms;
 
-        if self.cycle_position <= self.duty_cycle {
+        if self.cycle_position <= self.gate {
             Some(true)
         } else {
             Some(false)
@@ -97,7 +95,7 @@ impl Device for Clock {
             0.0,
             360.0 * self.cycle_position,
             CLOCK_RADIUS,
-            360.0 * self.duty_cycle,
+            360.0 * self.gate,
             ctx.fg_color,
         );
     }
@@ -123,7 +121,7 @@ impl Device for Clock {
         }
 
         ui.separator();
-        ui.add(Slider::new(&mut self.duty_cycle, 0f32..=1.0f32).text("Duty Cycle"));
+        ui.add(Slider::new(&mut self.gate, 0f32..=1.0f32).text("Gate"));
 
         ui.separator();
         ui.add(Slider::new(&mut self.offset, 0f32..=1.0f32).text("Offset"));
