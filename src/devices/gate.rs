@@ -88,24 +88,24 @@ impl Device for Gate {
         draw_symbol(ctx, x, y, GATE_WIDTH * 0.5, &self.operation);
     }
 
-    fn inspector(&mut self, ui: &mut macroquad::ui::Ui) {
-        ui.label(None, "Edit Gate");
-        if ui.button(None, "AND") {
+    fn inspector(&mut self, ui: &mut egui::Ui) {
+        ui.label("Edit Gate");
+        if ui.button("AND").clicked() {
             self.operation = BooleanOperation::AND;
         }
-        if ui.button(None, "OR") {
+        if ui.button("OR").clicked() {
             self.operation = BooleanOperation::OR;
         }
-        if ui.button(None, "XOR") {
+        if ui.button("XOR").clicked() {
             self.operation = BooleanOperation::XOR;
         }
-        if ui.button(None, "NAND") {
+        if ui.button("NAND").clicked() {
             self.operation = BooleanOperation::NAND;
         }
-        if ui.button(None, "NOR") {
+        if ui.button("NOR").clicked() {
             self.operation = BooleanOperation::NOR;
         }
-        if ui.button(None, "XNOR") {
+        if ui.button("XNOR").clicked() {
             self.operation = BooleanOperation::XNOR;
         }
     }

@@ -1,9 +1,9 @@
 use std::time::Instant;
 
+use egui::{DragValue, Slider};
 use macroquad::{
     math::Vec2,
     shapes::{draw_arc, draw_circle, draw_circle_lines},
-    ui::hash,
 };
 
 use crate::session::{DrawContext, UpdateContext};
@@ -102,27 +102,31 @@ impl Device for Clock {
         );
     }
 
-    fn inspector(&mut self, ui: &mut macroquad::ui::Ui) {
-        ui.label(None, "Edit Clock");
+    fn inspector(&mut self, ui: &mut egui::Ui) {
+        ui.label("Edit Clock");
         ui.separator();
         match &mut self.period {
             Period::Milliseconds(ms) => {
-                ui.slider(hash!(), "Period", 1f32..10000f32, ms);
+                ui.add(Slider::new(ms, 1f32..=10000f32).text("Period"));
             }
             Period::NoteLength {
                 numerator,
                 denominator,
             } => {
-                ui.drag(hash!(), "Numerator", Some((1, 256)), numerator);
-                ui.drag(hash!(), "Denominator", Some((1, 256)), denominator);
+                ui.horizontal(|ui| {
+                    ui.label("Note Length");
+                    ui.add(DragValue::new(numerator).range(1..=256));
+                    ui.label("/");
+                    ui.add(DragValue::new(denominator).range(1..=256));
+                });
             }
         }
 
         ui.separator();
-        ui.slider(hash!(), "Duty Cycle", 0f32..1.0f32, &mut self.duty_cycle);
+        ui.add(Slider::new(&mut self.duty_cycle, 0f32..=1.0f32).text("Duty Cycle"));
 
         ui.separator();
-        ui.slider(hash!(), "Offset", 0f32..1.0f32, &mut self.offset);
+        ui.add(Slider::new(&mut self.offset, 0f32..=1.0f32).text("Offset"));
     }
 
     fn input_arity(&self) -> Arity {

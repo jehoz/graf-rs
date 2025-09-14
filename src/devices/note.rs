@@ -1,3 +1,4 @@
+use egui::DragValue;
 use macroquad::{
     math::Vec2,
     shapes::{draw_circle, draw_circle_lines},
@@ -110,12 +111,10 @@ impl Device for Note {
         }
     }
 
-    fn inspector(&mut self, ui: &mut macroquad::ui::Ui) {
-        ui.label(None, "Edit Note");
+    fn inspector(&mut self, ui: &mut egui::Ui) {
+        ui.label("Edit Note");
         ui.separator();
-        let mut octave = self.octave as f32;
-        ui.slider(hash!(), "Octave", 0.0..8.0, &mut octave);
-        self.octave = octave.round() as u8;
+        ui.add(DragValue::new(&mut self.octave).range(0..=8));
     }
 
     fn input_arity(&self) -> Arity {

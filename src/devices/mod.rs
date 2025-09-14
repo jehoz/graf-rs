@@ -1,4 +1,5 @@
-use macroquad::{prelude::Vec2, ui::Ui};
+use egui::Ui;
+use macroquad::prelude::Vec2;
 
 use crate::session::{DrawContext, UpdateContext};
 
