@@ -182,18 +182,16 @@ impl App {
 
     pub fn update(&mut self) {
         self.session.update();
+    }
 
+    pub fn ui(&mut self, ctx: &egui::Context) {
         if let Some(dev_id) = self.inspector {
-            let (w, h) = screen_size();
             match self.session.devices.get_mut(&dev_id) {
                 Some(dev) => {
-                    Window::new(
-                        hash!(),
-                        vec2(w - INSPECTOR_WIDTH, 0.0),
-                        vec2(INSPECTOR_WIDTH, h),
-                    )
-                    .movable(false)
-                    .ui(&mut *root_ui(), |ui| dev.inspector(ui));
+                    egui::Window::new("Edit Device")
+                        .movable(false)
+                        .collapsible(false)
+                        .show(ctx, |ui| dev.inspector(ui));
                 }
                 None => {
                     panic!("Tried to inspect device that doesn't exist???")
