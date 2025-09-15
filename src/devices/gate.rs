@@ -1,3 +1,4 @@
+use egui::{FontId, RichText};
 use macroquad::{
     math::Vec2,
     shapes::{draw_circle, draw_circle_lines, draw_line, draw_rectangle, draw_rectangle_lines},
@@ -7,6 +8,7 @@ use crate::session::{DrawContext, UpdateContext};
 
 use super::{Arity, Device, GATE_WIDTH};
 
+#[derive(PartialEq)]
 pub enum BooleanOperation {
     AND,
     OR,
@@ -89,25 +91,50 @@ impl Device for Gate {
     }
 
     fn inspector(&mut self, ui: &mut egui::Ui) {
-        ui.label("Edit Gate");
-        if ui.button("AND").clicked() {
-            self.operation = BooleanOperation::AND;
-        }
-        if ui.button("OR").clicked() {
-            self.operation = BooleanOperation::OR;
-        }
-        if ui.button("XOR").clicked() {
-            self.operation = BooleanOperation::XOR;
-        }
-        if ui.button("NAND").clicked() {
-            self.operation = BooleanOperation::NAND;
-        }
-        if ui.button("NOR").clicked() {
-            self.operation = BooleanOperation::NOR;
-        }
-        if ui.button("XNOR").clicked() {
-            self.operation = BooleanOperation::XNOR;
-        }
+        ui.label(
+            RichText::new("Gate")
+                .font(FontId::proportional(16.0))
+                .strong(),
+        );
+        ui.separator();
+
+        egui::Grid::new("gate_buttons")
+            .num_columns(3)
+            .show(ui, |ui| {
+                ui.add_enabled_ui(self.operation != BooleanOperation::AND, |ui| {
+                    if ui.button("AND").clicked() {
+                        self.operation = BooleanOperation::AND;
+                    }
+                });
+                ui.add_enabled_ui(self.operation != BooleanOperation::OR, |ui| {
+                    if ui.button("OR").clicked() {
+                        self.operation = BooleanOperation::OR;
+                    }
+                });
+                ui.add_enabled_ui(self.operation != BooleanOperation::XOR, |ui| {
+                    if ui.button("XOR").clicked() {
+                        self.operation = BooleanOperation::XOR;
+                    }
+                });
+                ui.end_row();
+
+                ui.add_enabled_ui(self.operation != BooleanOperation::NAND, |ui| {
+                    if ui.button("NAND").clicked() {
+                        self.operation = BooleanOperation::NAND;
+                    }
+                });
+                ui.add_enabled_ui(self.operation != BooleanOperation::NOR, |ui| {
+                    if ui.button("NOR").clicked() {
+                        self.operation = BooleanOperation::NOR;
+                    }
+                });
+                ui.add_enabled_ui(self.operation != BooleanOperation::XNOR, |ui| {
+                    if ui.button("XNOR").clicked() {
+                        self.operation = BooleanOperation::XNOR;
+                    }
+                });
+                ui.end_row();
+            });
     }
 
     fn input_arity(&self) -> Arity {
