@@ -1,17 +1,19 @@
-use egui::DragValue;
+use egui::{DragValue, FontId, RichText};
 use macroquad::{
     math::Vec2,
     shapes::{draw_circle, draw_circle_lines},
-    ui::hash,
 };
 use midly::live::LiveEvent;
 
-use crate::session::{DrawContext, UpdateContext};
+use crate::{
+    session::{DrawContext, UpdateContext},
+    widgets::note_picker::NotePicker,
+};
 
 use super::{Arity, Device, NOTE_RADIUS};
 
 #[derive(Clone, Copy)]
-enum OctaveNote {
+pub enum PitchClass {
     C,
     Cs,
     D,
@@ -31,7 +33,7 @@ pub struct Note {
 
     midi_channel: u8,
     octave: u8,
-    note: OctaveNote,
+    pitch_class: PitchClass,
     velocity: u8,
 
     is_on: bool,
@@ -44,7 +46,7 @@ impl Note {
 
             midi_channel: 0,
             octave: 4,
-            note: OctaveNote::C,
+            pitch_class: PitchClass::C,
             velocity: 100,
 
             is_on: false,
@@ -52,7 +54,7 @@ impl Note {
     }
 
     fn midi_key(&self) -> u8 {
-        self.note as u8 + self.octave * 12
+        self.pitch_class as u8 + self.octave * 12
     }
 }
 
@@ -112,8 +114,15 @@ impl Device for Note {
     }
 
     fn inspector(&mut self, ui: &mut egui::Ui) {
-        ui.label("Edit Note");
+        ui.label(
+            RichText::new("Note")
+                .font(FontId::proportional(16.0))
+                .strong(),
+        );
         ui.separator();
+
+        ui.add(NotePicker::new(&mut self.pitch_class));
+
         ui.add(DragValue::new(&mut self.octave).range(0..=8));
     }
 

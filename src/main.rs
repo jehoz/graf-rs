@@ -7,6 +7,7 @@ mod devices;
 mod drawing_utils;
 mod midi;
 mod session;
+mod widgets;
 
 fn window_conf() -> Conf {
     Conf {
