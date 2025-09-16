@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use egui::{DragValue, Slider};
+use egui::{Color32, DragValue, FontId, RichText, Slider};
 use macroquad::{
     math::Vec2,
     shapes::{draw_arc, draw_circle, draw_circle_lines},
@@ -101,8 +101,13 @@ impl Device for Clock {
     }
 
     fn inspector(&mut self, ui: &mut egui::Ui) {
-        ui.label("Edit Clock");
+        ui.label(
+            RichText::new("Clock")
+                .font(FontId::proportional(16.0))
+                .strong(),
+        );
         ui.separator();
+
         match &mut self.period {
             Period::Milliseconds(ms) => {
                 ui.add(Slider::new(ms, 1f32..=10000f32).text("Period"));
@@ -119,11 +124,7 @@ impl Device for Clock {
                 });
             }
         }
-
-        ui.separator();
         ui.add(Slider::new(&mut self.gate, 0f32..=1.0f32).text("Gate"));
-
-        ui.separator();
         ui.add(Slider::new(&mut self.offset, 0f32..=1.0f32).text("Offset"));
     }
 

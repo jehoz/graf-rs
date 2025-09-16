@@ -190,7 +190,8 @@ impl App {
                 Some(dev) => {
                     egui::Window::new("Edit Device")
                         .movable(false)
-                        .collapsible(false)
+                        .title_bar(false)
+                        .resizable(false)
                         .show(ctx, |ui| dev.inspector(ui));
                 }
                 None => {
