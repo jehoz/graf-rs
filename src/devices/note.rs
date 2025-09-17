@@ -12,7 +12,7 @@ use crate::{
 
 use super::{Arity, Device, NOTE_RADIUS};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum PitchClass {
     C,
     Cs,
@@ -121,9 +121,13 @@ impl Device for Note {
         );
         ui.separator();
 
+        ui.horizontal(|ui| {
+            ui.label("Octave");
+            ui.add(DragValue::new(&mut self.octave).range(0..=8));
+        });
+
         ui.add(NotePicker::new(&mut self.pitch_class));
 
-        ui.add(DragValue::new(&mut self.octave).range(0..=8));
     }
 
     fn input_arity(&self) -> Arity {

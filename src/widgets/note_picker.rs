@@ -1,4 +1,5 @@
-use egui::{Pos2, Rect, Sense, Shape, Stroke, StrokeKind, Vec2, Widget};
+
+use egui::{Grid, Pos2, Rect, Sense, Shape, Stroke, StrokeKind, Vec2, Widget};
 
 use crate::devices::note::PitchClass;
 
@@ -6,28 +7,66 @@ pub struct NotePicker<'a> {
     note: &'a mut PitchClass,
 
     width: f32,
+    height: f32,
     key_corner_radius: f32,
 }
+
+const WHITE_KEYS: [PitchClass; 7] = [
+    PitchClass::C,
+    PitchClass::D,
+    PitchClass::E,
+    PitchClass::F,
+    PitchClass::G,
+    PitchClass::A,
+    PitchClass::B,
+];
+
+const BLACK_KEYS: [PitchClass; 5] = [
+    PitchClass::Cs,
+    PitchClass::Ds,
+    PitchClass::Fs,
+    PitchClass::Gs,
+    PitchClass::As,
+];
 
 impl<'a> NotePicker<'a> {
     pub fn new(var: &'a mut PitchClass) -> NotePicker<'a> {
         NotePicker {
             note: var,
             width: 200.0,
+            height: 80.0,
             key_corner_radius: 2.0,
         }
     }
 }
 
 impl<'a> Widget for NotePicker<'a> {
-    fn ui(mut self, ui: &mut egui::Ui) -> egui::Response {
-        let desired_size = Vec2::new(self.width, self.width * 0.5);
-        let mut response = ui.allocate_response(desired_size, Sense::click());
+    fn ui(self, ui: &mut egui::Ui) -> egui::Response {
+        let desired_size = Vec2::new(self.width, self.height);
+        let response = ui.allocate_response(desired_size, Sense::click());
 
         let key_width = response.rect.width() / 7.0;
         if ui.is_rect_visible(response.rect) {
+            Grid::new("key_notes").num_columns(12).max_col_width(response.rect.width() / 12.0).show(ui, |ui| {
+                    ui.label("C");
+                    ui.label("C#");
+                    ui.label("D");
+                    ui.label("D#");
+                    ui.label("E");
+                    ui.label("F");
+                    ui.label("F#");
+                    ui.label("G");
+                    ui.label("G#");
+                    ui.label("A");
+                    ui.label("A#");
+                    ui.label("B");
+                    ui.end_row();
+            });
+
+            let mut key_clicked = None;
+
             // white keys
-            for i in 0..7 {
+            for (i, key) in WHITE_KEYS.iter().enumerate() {
                 let key_rect = Rect::from_center_size(
                     Pos2::new(
                         response.rect.left() + (i as f32 + 0.5) * key_width,
@@ -36,10 +75,16 @@ impl<'a> Widget for NotePicker<'a> {
                     Vec2::new(key_width, response.rect.height()),
                 );
 
+                let fill_color = if *self.note == *key {
+                    ui.visuals().text_color()
+                } else {
+                    ui.visuals().weak_text_color()
+                };
+
                 ui.painter().add(Shape::rect_filled(
                     key_rect,
                     self.key_corner_radius,
-                    ui.visuals().weak_text_color(),
+                    fill_color,
                 ));
                 ui.painter().add(Shape::rect_stroke(
                     key_rect,
@@ -47,10 +92,16 @@ impl<'a> Widget for NotePicker<'a> {
                     Stroke::new(1.0, ui.visuals().extreme_bg_color),
                     StrokeKind::Inside,
                 ));
+
+                if let Some(pos) = response.interact_pointer_pos() {
+                    if key_rect.contains(pos) {
+                        key_clicked = Some(*key);
+                    }
+                }
             }
 
             // black keys
-            for i in 0..2 {
+            for (i, key) in BLACK_KEYS.iter().take(2).enumerate() {
                 let key_rect = Rect::from_center_size(
                     Pos2::new(
                         response.rect.left() + (i as f32 + 1.0) * key_width,
@@ -59,10 +110,16 @@ impl<'a> Widget for NotePicker<'a> {
                     Vec2::new(key_width * 0.67, response.rect.height() * 0.67),
                 );
 
+                let fill_color = if *self.note == *key {
+                    ui.visuals().text_color()
+                } else {
+                    ui.visuals().weak_text_color()
+                };
+
                 ui.painter().add(Shape::rect_filled(
                     key_rect,
                     self.key_corner_radius,
-                    ui.visuals().weak_text_color(),
+                    fill_color,
                 ));
                 ui.painter().add(Shape::rect_stroke(
                     key_rect,
@@ -70,8 +127,14 @@ impl<'a> Widget for NotePicker<'a> {
                     Stroke::new(2.0, ui.visuals().extreme_bg_color),
                     StrokeKind::Inside,
                 ));
+
+                if let Some(pos) = response.interact_pointer_pos() {
+                    if key_rect.contains(pos) {
+                        key_clicked = Some(*key);
+                    }
+                }
             }
-            for i in 0..3 {
+            for (i, key) in BLACK_KEYS.iter().skip(2).enumerate() {
                 let key_rect = Rect::from_center_size(
                     Pos2::new(
                         response.rect.left() + (i as f32 + 4.0) * key_width,
@@ -80,10 +143,16 @@ impl<'a> Widget for NotePicker<'a> {
                     Vec2::new(key_width * 0.67, response.rect.height() * 0.67),
                 );
 
+                let fill_color = if *self.note == *key {
+                    ui.visuals().text_color()
+                } else {
+                    ui.visuals().weak_text_color()
+                };
+
                 ui.painter().add(Shape::rect_filled(
                     key_rect,
                     self.key_corner_radius,
-                    ui.visuals().weak_text_color(),
+                    fill_color,
                 ));
                 ui.painter().add(Shape::rect_stroke(
                     key_rect,
@@ -91,6 +160,16 @@ impl<'a> Widget for NotePicker<'a> {
                     Stroke::new(2.0, ui.visuals().extreme_bg_color),
                     StrokeKind::Inside,
                 ));
+
+                if let Some(pos) = response.interact_pointer_pos() {
+                    if key_rect.contains(pos) {
+                        key_clicked = Some(*key);
+                    }
+                }
+            }
+
+            if let Some(key) = key_clicked {
+                *self.note = key;
             }
         }
 
