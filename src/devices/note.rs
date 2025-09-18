@@ -28,6 +28,25 @@ pub enum PitchClass {
     B,
 }
 
+impl ToString for PitchClass {
+    fn to_string(&self) -> String {
+        match *self {
+            PitchClass::C => "C".to_string(),
+            PitchClass::Cs => "C#".to_string(),
+            PitchClass::D => "D".to_string(),
+            PitchClass::Ds => "D#".to_string(),
+            PitchClass::E => "E".to_string(),
+            PitchClass::F => "F".to_string(),
+            PitchClass::Fs => "F#".to_string(),
+            PitchClass::G => "G".to_string(),
+            PitchClass::Gs => "G#".to_string(),
+            PitchClass::A => "A".to_string(),
+            PitchClass::As => "A#".to_string(),
+            PitchClass::B => "B".to_string(),
+        }
+    }
+}
+
 pub struct Note {
     position: Vec2,
 
@@ -126,8 +145,9 @@ impl Device for Note {
             ui.add(DragValue::new(&mut self.octave).range(0..=8));
         });
 
-        ui.add(NotePicker::new(&mut self.pitch_class));
+        ui.add_space(2.0);
 
+        ui.add(NotePicker::new(&mut self.pitch_class));
     }
 
     fn input_arity(&self) -> Arity {
