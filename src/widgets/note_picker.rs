@@ -1,5 +1,4 @@
-
-use egui::{Grid, Pos2, Rect, Sense, Shape, Stroke, StrokeKind, Vec2, Widget};
+use egui::{Align2, FontId, Grid, Pos2, Rect, Sense, Shape, Stroke, StrokeKind, Vec2, Widget};
 
 use crate::devices::note::PitchClass;
 
@@ -47,22 +46,6 @@ impl<'a> Widget for NotePicker<'a> {
 
         let key_width = response.rect.width() / 7.0;
         if ui.is_rect_visible(response.rect) {
-            Grid::new("key_notes").num_columns(12).max_col_width(response.rect.width() / 12.0).show(ui, |ui| {
-                    ui.label("C");
-                    ui.label("C#");
-                    ui.label("D");
-                    ui.label("D#");
-                    ui.label("E");
-                    ui.label("F");
-                    ui.label("F#");
-                    ui.label("G");
-                    ui.label("G#");
-                    ui.label("A");
-                    ui.label("A#");
-                    ui.label("B");
-                    ui.end_row();
-            });
-
             let mut key_clicked = None;
 
             // white keys
@@ -92,6 +75,13 @@ impl<'a> Widget for NotePicker<'a> {
                     Stroke::new(1.0, ui.visuals().extreme_bg_color),
                     StrokeKind::Inside,
                 ));
+                ui.painter().text(
+                    key_rect.center_bottom() - Vec2::new(0.0, 5.0),
+                    Align2::CENTER_BOTTOM,
+                    *key,
+                    FontId::proportional(11.0),
+                    ui.visuals().extreme_bg_color,
+                );
 
                 if let Some(pos) = response.interact_pointer_pos() {
                     if key_rect.contains(pos) {
@@ -107,7 +97,7 @@ impl<'a> Widget for NotePicker<'a> {
                         response.rect.left() + (i as f32 + 1.0) * key_width,
                         response.rect.center().y - (response.rect.height() * 0.25 * 0.67),
                     ),
-                    Vec2::new(key_width * 0.67, response.rect.height() * 0.67),
+                    Vec2::new(key_width * 0.75, response.rect.height() * 0.67),
                 );
 
                 let fill_color = if *self.note == *key {
@@ -127,6 +117,13 @@ impl<'a> Widget for NotePicker<'a> {
                     Stroke::new(2.0, ui.visuals().extreme_bg_color),
                     StrokeKind::Inside,
                 ));
+                ui.painter().text(
+                    key_rect.center_bottom() - Vec2::new(0.0, 5.0),
+                    Align2::CENTER_BOTTOM,
+                    *key,
+                    FontId::proportional(11.0),
+                    ui.visuals().extreme_bg_color,
+                );
 
                 if let Some(pos) = response.interact_pointer_pos() {
                     if key_rect.contains(pos) {
@@ -140,7 +137,7 @@ impl<'a> Widget for NotePicker<'a> {
                         response.rect.left() + (i as f32 + 4.0) * key_width,
                         response.rect.center().y - (response.rect.height() * 0.25 * 0.67),
                     ),
-                    Vec2::new(key_width * 0.67, response.rect.height() * 0.67),
+                    Vec2::new(key_width * 0.75, response.rect.height() * 0.67),
                 );
 
                 let fill_color = if *self.note == *key {
@@ -160,6 +157,13 @@ impl<'a> Widget for NotePicker<'a> {
                     Stroke::new(2.0, ui.visuals().extreme_bg_color),
                     StrokeKind::Inside,
                 ));
+                ui.painter().text(
+                    key_rect.center_bottom() - Vec2::new(0.0, 5.0),
+                    Align2::CENTER_BOTTOM,
+                    *key,
+                    FontId::proportional(11.0),
+                    ui.visuals().extreme_bg_color,
+                );
 
                 if let Some(pos) = response.interact_pointer_pos() {
                     if key_rect.contains(pos) {
