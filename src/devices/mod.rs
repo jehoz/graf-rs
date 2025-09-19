@@ -20,7 +20,7 @@ pub enum Arity {
 
 pub trait Device {
     fn update(&mut self, ctx: &mut UpdateContext, inputs: Vec<bool>) -> Option<bool>;
-    fn draw(&self, ctx: &DrawContext);
+    fn draw(&self, ctx: &DrawContext, is_selected: bool);
 
     fn get_position(&self) -> Vec2;
     fn set_position(&mut self, pos: Vec2);

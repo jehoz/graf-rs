@@ -83,8 +83,13 @@ impl Device for Clock {
         }
     }
 
-    fn draw(&self, ctx: &DrawContext) {
+    fn draw(&self, ctx: &DrawContext, is_selected: bool) {
         let Vec2 { x, y } = self.position;
+
+        if is_selected {
+            draw_circle_lines(x, y, CLOCK_RADIUS + 4.0, 2.0, ctx.fg_color.with_alpha(0.5));
+        }
+
         draw_circle_lines(x, y, CLOCK_RADIUS, 1.0, ctx.fg_color);
         draw_circle(x, y, CLOCK_RADIUS, ctx.bg_color);
 

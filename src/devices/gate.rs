@@ -69,8 +69,20 @@ impl Device for Gate {
         Some(out)
     }
 
-    fn draw(&self, ctx: &DrawContext) {
+    fn draw(&self, ctx: &DrawContext, is_selected: bool) {
         let Vec2 { x, y } = self.position;
+
+        if is_selected {
+            draw_rectangle_lines(
+                x - (GATE_WIDTH / 2.0 + 4.0),
+                y - (GATE_WIDTH / 2.0 + 4.0),
+                GATE_WIDTH + 8.0,
+                GATE_WIDTH + 8.0,
+                4.0,
+                ctx.fg_color.with_alpha(0.5),
+            );
+        }
+
         draw_rectangle(
             x - GATE_WIDTH / 2.,
             y - GATE_WIDTH / 2.,
