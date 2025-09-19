@@ -6,6 +6,7 @@ use macroquad::{
 use midly::live::LiveEvent;
 
 use crate::{
+    midi::MidiConfig,
     session::{DrawContext, UpdateContext},
     widgets::note_picker::NotePicker,
 };
@@ -56,6 +57,9 @@ pub struct Note {
     velocity: u8,
 
     is_on: bool,
+    // use this outside of update so that we can clean up the midi state
+    // properly next time update is called
+    should_change_note: Option<(u8, PitchClass)>,
 }
 
 impl Note {
@@ -69,11 +73,46 @@ impl Note {
             velocity: 100,
 
             is_on: false,
+            should_change_note: None,
         }
     }
 
     fn midi_key(&self) -> u8 {
         self.pitch_class as u8 + self.octave * 12
+    }
+
+    fn turn_on(&mut self, midi: &mut MidiConfig) {
+        if self.is_on {
+            return;
+        }
+
+        let event = LiveEvent::Midi {
+            channel: self.midi_channel.into(),
+            message: midly::MidiMessage::NoteOn {
+                key: self.midi_key().into(),
+                vel: self.velocity.into(),
+            },
+        };
+
+        midi.handle_live_event(event);
+        self.is_on = true;
+    }
+
+    fn turn_off(&mut self, midi: &mut MidiConfig) {
+        if !self.is_on {
+            return;
+        }
+
+        let event = LiveEvent::Midi {
+            channel: self.midi_channel.into(),
+            message: midly::MidiMessage::NoteOff {
+                key: self.midi_key().into(),
+                vel: self.velocity.into(),
+            },
+        };
+
+        midi.handle_live_event(event);
+        self.is_on = false;
     }
 }
 
@@ -96,30 +135,21 @@ impl Device for Note {
     }
 
     fn update(&mut self, ctx: &mut UpdateContext, inputs: Vec<bool>) -> Option<bool> {
+        if let Some((octave, pitch)) = self.should_change_note {
+            self.turn_off(&mut ctx.midi_config);
+            self.octave = octave;
+            self.pitch_class = pitch;
+            self.should_change_note = None;
+        }
+
         if let Some(input_on) = inputs.first() {
-            if *input_on && !self.is_on {
-                let event = LiveEvent::Midi {
-                    channel: self.midi_channel.into(),
-                    message: midly::MidiMessage::NoteOn {
-                        key: self.midi_key().into(),
-                        vel: self.velocity.into(),
-                    },
-                };
-
-                ctx.midi_config.handle_live_event(event);
-                self.is_on = true;
-            } else if !(*input_on) && self.is_on {
-                let event = LiveEvent::Midi {
-                    channel: self.midi_channel.into(),
-                    message: midly::MidiMessage::NoteOff {
-                        key: self.midi_key().into(),
-                        vel: self.velocity.into(),
-                    },
-                };
-
-                ctx.midi_config.handle_live_event(event);
-                self.is_on = false;
+            if *input_on {
+                self.turn_on(&mut ctx.midi_config);
+            } else {
+                self.turn_off(&mut ctx.midi_config);
             }
+        } else {
+            self.turn_off(&mut ctx.midi_config);
         }
         None
     }
@@ -133,6 +163,9 @@ impl Device for Note {
     }
 
     fn inspector(&mut self, ui: &mut egui::Ui) {
+        let mut octave = self.octave;
+        let mut pitch = self.pitch_class;
+
         ui.label(
             RichText::new("Note")
                 .font(FontId::proportional(16.0))
@@ -142,12 +175,16 @@ impl Device for Note {
 
         ui.horizontal(|ui| {
             ui.label("Octave");
-            ui.add(DragValue::new(&mut self.octave).range(0..=8));
+            ui.add(DragValue::new(&mut octave).range(0..=8));
         });
 
         ui.add_space(2.0);
 
-        ui.add(NotePicker::new(&mut self.pitch_class));
+        ui.add(NotePicker::new(&mut pitch));
+
+        if self.octave != octave || self.pitch_class != pitch {
+            self.should_change_note = Some((octave, pitch));
+        }
     }
 
     fn input_arity(&self) -> Arity {
