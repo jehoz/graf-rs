@@ -1,9 +1,9 @@
 use core::panic;
 
+use egui::Align2;
 use macroquad::{
-    input::{is_mouse_button_pressed, is_mouse_button_released, mouse_position, MouseButton},
-    math::{vec2, Vec2},
-    miniquad::window::screen_size,
+    input::{is_key_pressed, is_mouse_button_pressed, is_mouse_button_released, mouse_position, KeyCode, MouseButton},
+    math::{vec2, Rect, Vec2},
     shapes::draw_rectangle_lines,
     ui::{hash, root_ui, widgets::Window},
     window::clear_background,
@@ -18,6 +18,7 @@ use crate::{
 
 enum CursorState {
     Idle,
+
     DraggingDevice(DeviceId),
     DraggingLooseWire(DeviceId),
     DraggingConnectedWire(DeviceId, DeviceId),
@@ -30,10 +31,8 @@ const INSPECTOR_WIDTH: f32 = 300.0;
 pub struct App {
     session: Session,
     cursor: CursorState,
-    selected: Vec<DeviceId>,
 
     context_menu: Option<Vec2>,
-    inspector: Option<DeviceId>,
 }
 
 impl App {
@@ -41,10 +40,8 @@ impl App {
         App {
             session: Session::new(),
             cursor: CursorState::Idle,
-            selected: Vec::new(),
 
             context_menu: None,
-            inspector: None,
         }
     }
 
@@ -59,7 +56,8 @@ impl App {
                     if is_mouse_button_pressed(MouseButton::Left) {
                         self.cursor = CursorState::DraggingDevice(id);
 
-                        self.inspector = Some(id);
+                        self.session.clear_selection();
+                        self.session.select_device(id);
                     }
                     if is_mouse_button_pressed(MouseButton::Right) {
                         self.cursor = CursorState::DraggingLooseWire(id);
@@ -138,22 +136,19 @@ impl App {
                 if is_mouse_button_released(MouseButton::Left) {
                     self.cursor = CursorState::Idle;
                 } else {
-                    self.selected.clear();
                     let top = f32::min(starting_corner.y, m_pos.y);
                     let left = f32::min(starting_corner.x, m_pos.x);
                     let delta = (m_pos - starting_corner).abs();
-                    let right = left + delta.x;
-                    let bottom = top + delta.y;
+                    let rect = Rect::new(left, top, delta.x, delta.y);
 
-                    for (id, device) in self.session.devices.iter() {
-                        let Vec2 { x: dev_x, y: dev_y } = device.get_position();
-                        // device position inside selection box?
-                        if dev_x > left && dev_x < right && dev_y > top && dev_y < bottom {
-                            self.selected.push(*id);
-                        }
-                    }
+                    self.session.clear_selection();
+                    self.session.select_devices_in_rect(rect);
                 }
             }
+        }
+
+        if is_key_pressed(KeyCode::Delete) {
+            self.session.delete_selected_devices();
         }
 
         if let Some(pos) = self.context_menu {
@@ -185,13 +180,14 @@ impl App {
     }
 
     pub fn ui(&mut self, ctx: &egui::Context) {
-        if let Some(dev_id) = self.inspector {
-            match self.session.devices.get_mut(&dev_id) {
+        if let [selected_id] = self.session.selected.as_slice() {
+            match self.session.devices.get_mut(&selected_id) {
                 Some(dev) => {
                     egui::Window::new("Edit Device")
+                        .anchor(Align2::RIGHT_TOP, [-10.0, 10.0])
                         .movable(false)
                         .title_bar(false)
-                        .resizable(false)
+                        // .resizable(false)
                         .show(ctx, |ui| dev.inspector(ui));
                 }
                 None => {

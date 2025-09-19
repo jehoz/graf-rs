@@ -2,9 +2,8 @@ use std::{collections::HashMap, time::Instant};
 
 use macroquad::{
     color::{Color, BLACK, RED, WHITE},
-    math::Vec2,
+    math::{Rect, Vec2},
 };
-use midir::MidiOutputConnection;
 
 use crate::{
     dag::{Dag, DeviceId, Edge},
@@ -50,6 +49,8 @@ impl DrawContext {
 
 pub struct Session {
     pub devices: HashMap<DeviceId, Box<dyn Device>>,
+    pub selected: Vec<DeviceId>,
+
     pub circuit: Dag,
 
     pub update_ctx: UpdateContext,
@@ -60,6 +61,7 @@ impl Session {
     pub fn new() -> Self {
         Session {
             devices: HashMap::new(),
+            selected: Vec::new(),
             circuit: Dag::new(),
 
             update_ctx: UpdateContext::new(),
@@ -133,6 +135,30 @@ impl Session {
         }
     }
 
+    pub fn clear_selection(&mut self) {
+        self.selected.clear();
+    }
+
+    pub fn select_device(&mut self, device_id: DeviceId) {
+        if !self.selected.contains(&device_id) {
+            self.selected.push(device_id);
+        }
+    }
+
+    pub fn select_devices_in_rect(&mut self, rect: Rect) {
+        for (id, device) in self.devices.iter() {
+            if rect.contains(device.get_position()) {
+                self.selected.push(*id);
+            }
+        }
+    }
+
+    pub fn delete_selected_devices(&mut self) {
+        for dev_id in &self.selected {
+            self.devices.remove(&dev_id);
+        }
+    }
+
     pub fn update(&mut self) {
         let mut device_outputs: HashMap<DeviceId, bool> = HashMap::new();
         for dev_id in self.circuit.vertices() {
@@ -150,8 +176,8 @@ impl Session {
     }
 
     pub fn draw(&self) {
-        for device in self.devices.values() {
-            device.draw(&self.draw_ctx);
+        for (dev_id, device) in &self.devices {
+            device.draw(&self.draw_ctx, self.selected.contains(dev_id));
         }
 
         for (from_id, to_id) in self.circuit.edges() {
