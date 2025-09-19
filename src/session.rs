@@ -155,8 +155,11 @@ impl Session {
 
     pub fn delete_selected_devices(&mut self) {
         for dev_id in &self.selected {
+            self.circuit.remove_vertex(*dev_id);
             self.devices.remove(&dev_id);
         }
+
+        self.clear_selection();
     }
 
     pub fn update(&mut self) {
