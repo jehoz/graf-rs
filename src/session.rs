@@ -153,6 +153,13 @@ impl Session {
         }
     }
 
+    pub fn move_selected_devices(&mut self, delta: Vec2) {
+        for dev_id in self.selected.iter() {
+            let pos = self.device_position(*dev_id).unwrap() + delta;
+            self.devices.get_mut(dev_id).map(|d| d.set_position(pos));
+        }
+    }
+
     pub fn delete_selected_devices(&mut self) {
         for dev_id in &self.selected {
             self.circuit.remove_vertex(*dev_id);

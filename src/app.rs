@@ -2,7 +2,10 @@ use core::panic;
 
 use egui::Align2;
 use macroquad::{
-    input::{is_key_pressed, is_mouse_button_pressed, is_mouse_button_released, mouse_position, KeyCode, MouseButton},
+    input::{
+        is_key_pressed, is_mouse_button_pressed, is_mouse_button_released, mouse_position, KeyCode,
+        MouseButton,
+    },
     math::{vec2, Rect, Vec2},
     shapes::draw_rectangle_lines,
     ui::{hash, root_ui, widgets::Window},
@@ -18,8 +21,7 @@ use crate::{
 
 enum CursorState {
     Idle,
-
-    DraggingDevice(DeviceId),
+    DraggingSelectedDevices(Vec2),
     DraggingLooseWire(DeviceId),
     DraggingConnectedWire(DeviceId, DeviceId),
     DraggingInvalidWire(DeviceId),
@@ -54,11 +56,13 @@ impl App {
             CursorState::Idle => match device_under_mouse {
                 Some(id) => {
                     if is_mouse_button_pressed(MouseButton::Left) {
-                        self.cursor = CursorState::DraggingDevice(id);
-
-                        self.session.clear_selection();
-                        self.session.select_device(id);
+                        if !self.session.selected.contains(&id) {
+                            self.session.clear_selection();
+                            self.session.select_device(id);
+                        }
+                        self.cursor = CursorState::DraggingSelectedDevices(m_pos);
                     }
+
                     if is_mouse_button_pressed(MouseButton::Right) {
                         self.cursor = CursorState::DraggingLooseWire(id);
                     }
@@ -83,8 +87,10 @@ impl App {
                 }
             },
 
-            CursorState::DraggingDevice(id) => {
-                self.session.move_device(id, m_pos);
+            CursorState::DraggingSelectedDevices(from) => {
+                self.session.move_selected_devices(m_pos - from);
+                self.cursor = CursorState::DraggingSelectedDevices(m_pos);
+
                 if is_mouse_button_released(MouseButton::Left) {
                     self.cursor = CursorState::Idle;
                 }
@@ -204,7 +210,7 @@ impl App {
         clear_background(self.session.draw_ctx.bg_color);
 
         match self.cursor {
-            CursorState::Idle | CursorState::DraggingDevice(_) => {}
+            CursorState::Idle | CursorState::DraggingSelectedDevices(_) => {}
             CursorState::DraggingLooseWire(from_id) => {
                 let from_dev = self.session.devices.get(&from_id).unwrap();
                 draw_wire_from_device(from_dev.as_ref(), m_pos, self.session.draw_ctx.fg_color);
