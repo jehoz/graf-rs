@@ -98,7 +98,7 @@ impl Device for Clock {
             y,
             32,
             0.0,
-            360.0 * self.cycle_position,
+            360.0 * (self.cycle_position - self.gate) - 90.0,
             CLOCK_RADIUS,
             360.0 * self.gate,
             ctx.fg_color,
