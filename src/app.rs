@@ -28,7 +28,7 @@ enum CursorState {
     DraggingSelectBox(Vec2),
 }
 
-const INSPECTOR_WIDTH: f32 = 300.0;
+const INSPECTOR_WIDTH: f32 = 200.0;
 
 pub struct App {
     session: Session,
@@ -193,7 +193,8 @@ impl App {
                         .anchor(Align2::RIGHT_TOP, [-10.0, 10.0])
                         .movable(false)
                         .title_bar(false)
-                        // .resizable(false)
+                        .default_width(INSPECTOR_WIDTH)
+                        .resizable(false)
                         .show(ctx, |ui| dev.inspector(ui));
                 }
                 None => {
