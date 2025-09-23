@@ -156,29 +156,6 @@ impl App {
         if is_key_pressed(KeyCode::Delete) {
             self.session.delete_selected_devices();
         }
-
-        if let Some(pos) = self.context_menu {
-            Window::new(hash!(), pos, vec2(60., 90.))
-                .label("New device")
-                .movable(false)
-                .ui(&mut *root_ui(), |ui| {
-                    if ui.button(None, "Clock") {
-                        let clock = Clock::new(pos);
-                        self.session.add_device(Box::new(clock));
-                        self.context_menu = None;
-                    }
-                    if ui.button(None, "Gate") {
-                        let gate = Gate::new(pos);
-                        self.session.add_device(Box::new(gate));
-                        self.context_menu = None;
-                    }
-                    if ui.button(None, "Note") {
-                        let note = Note::new(pos);
-                        self.session.add_device(Box::new(note));
-                        self.context_menu = None;
-                    }
-                });
-        }
     }
 
     pub fn update(&mut self) {
@@ -201,6 +178,30 @@ impl App {
                     panic!("Tried to inspect device that doesn't exist???")
                 }
             }
+        }
+
+        if let Some(pos) = self.context_menu {
+            egui::Window::new("context menu")
+                .resizable(false)
+                .title_bar(false)
+                .fixed_pos(pos.to_array())
+                .show(ctx, |ui| {
+                    if ui.button("Clock").clicked() {
+                        let clock = Clock::new(pos);
+                        self.session.add_device(Box::new(clock));
+                        self.context_menu = None;
+                    }
+                    if ui.button("Gate").clicked() {
+                        let gate = Gate::new(pos);
+                        self.session.add_device(Box::new(gate));
+                        self.context_menu = None;
+                    }
+                    if ui.button("Note").clicked() {
+                        let note = Note::new(pos);
+                        self.session.add_device(Box::new(note));
+                        self.context_menu = None;
+                    }
+                });
         }
     }
 
