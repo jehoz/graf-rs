@@ -7,9 +7,9 @@ pub mod clock;
 pub mod gate;
 pub mod note;
 
-const CLOCK_RADIUS: f32 = 18.0;
-const GATE_WIDTH: f32 = 36.0;
-const NOTE_RADIUS: f32 = 18.0;
+const CLOCK_RADIUS: f32 = 12.0;
+const GATE_WIDTH: f32 = 24.0;
+const NOTE_RADIUS: f32 = 12.0;
 
 #[derive(PartialEq)]
 pub enum Arity {
