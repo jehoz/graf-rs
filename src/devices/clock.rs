@@ -10,11 +10,13 @@ use crate::session::{DrawContext, UpdateContext};
 
 use super::{Arity, Device, CLOCK_RADIUS};
 
+#[derive(Clone)]
 pub enum Period {
     Milliseconds(f32),
     NoteLength { numerator: u32, denominator: u32 },
 }
 
+#[derive(Clone)]
 pub struct Clock {
     position: Vec2,
 
@@ -139,5 +141,9 @@ impl Device for Clock {
 
     fn has_output(&self) -> bool {
         true
+    }
+
+    fn clone_dyn(&self) -> Box<dyn Device> {
+        Box::new(self.clone())
     }
 }

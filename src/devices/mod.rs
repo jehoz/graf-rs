@@ -34,4 +34,7 @@ pub trait Device {
 
     // can there be wires coming out of this device?
     fn has_output(&self) -> bool;
+
+    // need this so we can copy and paste devices in the session
+    fn clone_dyn(&self) -> Box<dyn Device>;
 }

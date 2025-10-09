@@ -48,6 +48,7 @@ impl ToString for PitchClass {
     }
 }
 
+#[derive(Clone)]
 pub struct Note {
     position: Vec2,
 
@@ -198,5 +199,9 @@ impl Device for Note {
 
     fn has_output(&self) -> bool {
         false
+    }
+
+    fn clone_dyn(&self) -> Box<dyn Device> {
+        Box::new(self.clone())
     }
 }

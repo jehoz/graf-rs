@@ -8,7 +8,7 @@ use crate::session::{DrawContext, UpdateContext};
 
 use super::{Arity, Device, GATE_WIDTH};
 
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum BooleanOperation {
     AND,
     OR,
@@ -18,6 +18,7 @@ pub enum BooleanOperation {
     XNOR,
 }
 
+#[derive(Clone)]
 pub struct Gate {
     position: Vec2,
     operation: BooleanOperation,
@@ -155,6 +156,10 @@ impl Device for Gate {
 
     fn has_output(&self) -> bool {
         true
+    }
+
+    fn clone_dyn(&self) -> Box<dyn Device> {
+        Box::new(self.clone())
     }
 }
 
