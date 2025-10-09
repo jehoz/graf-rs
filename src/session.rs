@@ -49,9 +49,10 @@ impl DrawContext {
 
 pub struct Session {
     pub devices: HashMap<DeviceId, Box<dyn Device>>,
-    pub selected: Vec<DeviceId>,
-
     pub circuit: Dag,
+
+    pub selected: Vec<DeviceId>,
+    pub clipboard: (HashMap<DeviceId, Box<dyn Device>>, Vec<Edge>),
 
     pub update_ctx: UpdateContext,
     pub draw_ctx: DrawContext,
@@ -61,8 +62,10 @@ impl Session {
     pub fn new() -> Self {
         Session {
             devices: HashMap::new(),
-            selected: Vec::new(),
             circuit: Dag::new(),
+
+            selected: Vec::new(),
+            clipboard: (HashMap::new(), Vec::new()),
 
             update_ctx: UpdateContext::new(),
             draw_ctx: DrawContext::new(),
@@ -167,6 +170,24 @@ impl Session {
         }
 
         self.clear_selection();
+    }
+
+    pub fn copy_selected_devices(&mut self) {
+        let mut devices = HashMap::new();
+        for dev_id in &self.selected {
+            if let Some(device) = self.devices.get(&dev_id) {
+                devices.insert(*dev_id, device.clone_dyn());
+            }
+        }
+
+        let mut edges = Vec::new();
+        for (from, to) in self.circuit.edges() {
+            if devices.contains_key(from) && devices.contains_key(to) {
+                edges.push((*from, *to));
+            }
+        }
+
+        self.clipboard = (devices, edges);
     }
 
     pub fn update(&mut self) {

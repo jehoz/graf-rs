@@ -3,8 +3,8 @@ use core::panic;
 use egui::Align2;
 use macroquad::{
     input::{
-        is_key_pressed, is_mouse_button_pressed, is_mouse_button_released, mouse_position, KeyCode,
-        MouseButton,
+        is_key_down, is_key_pressed, is_mouse_button_pressed, is_mouse_button_released,
+        mouse_position, KeyCode, MouseButton,
     },
     math::{vec2, Rect, Vec2},
     shapes::draw_rectangle_lines,
@@ -155,6 +155,12 @@ impl App {
 
         if is_key_pressed(KeyCode::Delete) {
             self.session.delete_selected_devices();
+        }
+
+        if is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl) {
+            if is_key_pressed(KeyCode::C) {
+                self.session.copy_selected_devices();
+            }
         }
     }
 
