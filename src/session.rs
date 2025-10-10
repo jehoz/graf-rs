@@ -1,3 +1,4 @@
+use core::{clone::Clone, todo};
 use std::{collections::HashMap, time::Instant};
 
 use macroquad::{
@@ -72,9 +73,10 @@ impl Session {
         }
     }
 
-    pub fn add_device(&mut self, device: Box<dyn Device>) {
+    pub fn add_device(&mut self, device: Box<dyn Device>) -> DeviceId {
         let id = self.circuit.add_vertex();
         self.devices.insert(id, device);
+        id
     }
 
     pub fn connect_devices(&mut self, from: DeviceId, to: DeviceId) {
@@ -132,9 +134,10 @@ impl Session {
         self.devices.get(&id).map(|d| d.get_position())
     }
 
-    pub fn move_device(&mut self, device_id: DeviceId, position: Vec2) {
+    pub fn move_device(&mut self, device_id: DeviceId, delta: Vec2) {
         if let Some(device) = self.devices.get_mut(&device_id) {
-            device.set_position(position);
+            let new_pos = device.get_position() + delta;
+            device.set_position(new_pos);
         }
     }
 
@@ -174,10 +177,23 @@ impl Session {
 
     pub fn copy_selected_devices(&mut self) {
         let mut devices = HashMap::new();
+        let mut top_left = Vec2::new(f32::INFINITY, f32::INFINITY);
         for dev_id in &self.selected {
             if let Some(device) = self.devices.get(&dev_id) {
+                let pos = device.get_position();
+                if pos.x < top_left.x {
+                    top_left.x = pos.x;
+                }
+                if pos.y < top_left.y {
+                    top_left.y = pos.y;
+                }
                 devices.insert(*dev_id, device.clone_dyn());
             }
+        }
+
+        // set device positions to be relative to bounding box top-left corner
+        for (_, device) in devices.iter_mut() {
+            device.set_position(device.get_position() - top_left);
         }
 
         let mut edges = Vec::new();
@@ -188,6 +204,29 @@ impl Session {
         }
 
         self.clipboard = (devices, edges);
+    }
+
+    pub fn paste_clipboard(&mut self, position: Vec2) {
+        let (devices, edges) = &self.clipboard;
+
+        let mut new_devices = HashMap::new();
+        for (id, device) in devices.iter() {
+            new_devices.insert(*id, device.clone_dyn());
+        }
+        let edges = edges.clone();
+
+        let mut dev_id_map = HashMap::new();
+        for (old_id, device) in new_devices.drain() {
+            let new_id = self.add_device(device);
+            self.move_device(new_id, position);
+            dev_id_map.insert(old_id, new_id);
+        }
+
+        for (old_from, old_to) in edges.clone().iter() {
+            let from = dev_id_map.get(old_from).unwrap();
+            let to = dev_id_map.get(old_to).unwrap();
+            self.connect_devices(*from, *to);
+        }
     }
 
     pub fn update(&mut self) {

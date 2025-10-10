@@ -161,6 +161,10 @@ impl App {
             if is_key_pressed(KeyCode::C) {
                 self.session.copy_selected_devices();
             }
+
+            if is_key_pressed(KeyCode::V) {
+                self.session.paste_clipboard(m_pos);
+            }
         }
     }
 
