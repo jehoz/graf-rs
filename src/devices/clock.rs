@@ -11,32 +11,22 @@ use crate::session::{DrawContext, UpdateContext};
 use super::{Arity, Device, CLOCK_RADIUS};
 
 #[derive(Clone)]
-pub enum Period {
-    Milliseconds(f32),
-    NoteLength { numerator: u32, denominator: u32 },
-}
-
-pub struct EuclidianRhythm {
-    steps: u32,
-    pulses: u32,
-    pattern: Vec<bool>
-}
-
-impl EuclidianRhythm {
-    // TODO
-}
-
-#[derive(Clone)]
 pub struct Clock {
     position: Vec2,
 
-    period: Period,
+    // if true, the clock's cycle duration is a fraction of a note length
+    bpm_sync: bool,
+
+    // duration of clock cycle in seconds if not BPM synced
+    free_duration: f32,
+
+    // duration of clock cycle as fraction of note length if BPM synced
+    bpm_duration: (u32, u32),
+
+    // what proportion of the cycle is output "on" (value from 0 to 1)
     gate: f32,
+
     offset: f32,
-
-    euclidian_rhythm: Option<()>,
-    euclidian_sequence: Vec<>,
-
 
     cycle_position: f32,
 }
@@ -45,10 +35,9 @@ impl Clock {
     pub fn new(position: Vec2) -> Self {
         Clock {
             position,
-            period: Period::NoteLength {
-                numerator: 1,
-                denominator: 4,
-            },
+            bpm_sync: true,
+            free_duration: 500.0,
+            bpm_duration: (1, 4),
             gate: 0.5,
             offset: 0.,
 
@@ -79,15 +68,12 @@ impl Device for Clock {
         let now = Instant::now();
         let time_ms = now.duration_since(ctx.t0).as_secs_f32() * 1000.0;
 
-        let period_ms = match self.period {
-            Period::Milliseconds(ms) => ms,
-            Period::NoteLength {
-                numerator,
-                denominator,
-            } => {
-                let ms_per_note = 240_000.0 / (ctx.bpm as f32);
-                (numerator as f32 / denominator as f32) * ms_per_note
-            }
+        let period_ms = if self.bpm_sync {
+            let (numerator, denominator) = self.bpm_duration;
+            let ms_per_note = 240_000.0 / (ctx.bpm as f32);
+            (numerator as f32 / denominator as f32) * ms_per_note
+        } else {
+            self.free_duration
         };
 
         self.cycle_position = ((time_ms + self.offset * period_ms) % period_ms) / period_ms;
@@ -129,22 +115,20 @@ impl Device for Clock {
         );
         ui.separator();
 
-        match &mut self.period {
-            Period::Milliseconds(ms) => {
-                ui.add(Slider::new(ms, 1f32..=10000f32).text("Period"));
-            }
-            Period::NoteLength {
-                numerator,
-                denominator,
-            } => {
-                ui.horizontal(|ui| {
-                    ui.label("Note Length");
-                    ui.add(DragValue::new(numerator).range(1..=256));
-                    ui.label("/");
-                    ui.add(DragValue::new(denominator).range(1..=256));
-                });
-            }
+        ui.label("Rate");
+        ui.checkbox(&mut self.bpm_sync, "BPM Sync");
+        if self.bpm_sync {
+            let (n, d) = &mut self.bpm_duration;
+            ui.horizontal(|ui| {
+                ui.label("Note Length");
+                ui.add(DragValue::new(n).range(1..=256));
+                ui.label("/");
+                ui.add(DragValue::new(d).range(1..=256));
+            });
+        } else {
+            ui.add(Slider::new(&mut self.free_duration, 1f32..=10000f32).text("Period"));
         }
+
         ui.add(Slider::new(&mut self.gate, 0f32..=1.0f32).text("Gate"));
         ui.add(Slider::new(&mut self.offset, 0f32..=1.0f32).text("Offset"));
     }
