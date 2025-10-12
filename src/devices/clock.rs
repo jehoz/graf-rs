@@ -16,6 +16,16 @@ pub enum Period {
     NoteLength { numerator: u32, denominator: u32 },
 }
 
+pub struct EuclidianRhythm {
+    steps: u32,
+    pulses: u32,
+    pattern: Vec<bool>
+}
+
+impl EuclidianRhythm {
+    // TODO
+}
+
 #[derive(Clone)]
 pub struct Clock {
     position: Vec2,
@@ -23,6 +33,10 @@ pub struct Clock {
     period: Period,
     gate: f32,
     offset: f32,
+
+    euclidian_rhythm: Option<()>,
+    euclidian_sequence: Vec<>,
+
 
     cycle_position: f32,
 }
