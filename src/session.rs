@@ -1,5 +1,5 @@
-use core::{clone::Clone, todo};
-use std::{collections::HashMap, time::Instant};
+use core::clone::Clone;
+use std::{collections::HashMap, time::{Instant, Duration}};
 
 use macroquad::{
     color::{Color, BLACK, RED, WHITE},
@@ -14,9 +14,11 @@ use crate::{
 };
 
 pub struct UpdateContext {
-    pub t0: Instant,
-
+    pub session_time: Duration,
+    pub last_update: Instant,
     pub bpm: u32,
+
+    pub is_paused: bool,
 
     pub midi_config: MidiConfig,
 }
@@ -24,8 +26,11 @@ pub struct UpdateContext {
 impl UpdateContext {
     pub fn new() -> Self {
         UpdateContext {
-            t0: Instant::now(),
+            session_time: Duration::ZERO,
+            last_update: Instant::now(),
             bpm: 120,
+
+            is_paused: false,
 
             midi_config: MidiConfig::new(),
         }
@@ -229,7 +234,19 @@ impl Session {
         }
     }
 
+    pub fn toggle_pause(&mut self) {
+        self.update_ctx.is_paused = !self.update_ctx.is_paused;
+    }
+
     pub fn update(&mut self) {
+        if self.update_ctx.is_paused {
+            self.update_ctx.last_update = Instant::now();
+        } else {
+            let now = Instant::now();
+            self.update_ctx.session_time += now - self.update_ctx.last_update;
+            self.update_ctx.last_update = now;
+        }
+
         let mut device_outputs: HashMap<DeviceId, bool> = HashMap::new();
         for dev_id in self.circuit.vertices() {
             let inputs: Vec<bool> = self

@@ -65,8 +65,7 @@ impl Device for Clock {
     }
 
     fn update(&mut self, ctx: &mut UpdateContext, _inputs: Vec<bool>) -> Option<bool> {
-        let now = Instant::now();
-        let time_ms = now.duration_since(ctx.t0).as_secs_f32() * 1000.0;
+        let time_ms = ctx.session_time.as_secs_f32() * 1000.0;
 
         let period_ms = if self.bpm_sync {
             let (numerator, denominator) = self.bpm_duration;

@@ -166,6 +166,10 @@ impl App {
                 self.session.paste_clipboard(m_pos);
             }
         }
+
+        if is_key_pressed(KeyCode::Space) {
+            self.session.toggle_pause();
+        }
     }
 
     pub fn update(&mut self) {
