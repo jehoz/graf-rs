@@ -1,4 +1,4 @@
-use core::panic;
+use core::{iter::Iterator, panic};
 
 use egui::Align2;
 use macroquad::{
@@ -7,9 +7,9 @@ use macroquad::{
         mouse_position, KeyCode, MouseButton,
     },
     math::{vec2, Rect, Vec2},
-    shapes::draw_rectangle_lines,
+    shapes::{draw_circle, draw_rectangle_lines},
     ui::{hash, root_ui, widgets::Window},
-    window::clear_background,
+    window::{clear_background, screen_height, screen_width},
 };
 
 use crate::{
@@ -92,6 +92,7 @@ impl App {
                 self.cursor = CursorState::DraggingSelectedDevices(m_pos);
 
                 if is_mouse_button_released(MouseButton::Left) {
+                    self.session.snap_selected_to_grid();
                     self.cursor = CursorState::Idle;
                 }
             }

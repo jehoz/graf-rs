@@ -3,7 +3,7 @@ use std::{collections::HashMap, time::{Instant, Duration}};
 
 use macroquad::{
     color::{Color, BLACK, RED, WHITE},
-    math::{Rect, Vec2},
+    math::{Rect, Vec2, IVec2},
 };
 
 use crate::{
@@ -12,6 +12,8 @@ use crate::{
     drawing_utils::draw_wire_between_devices,
     midi::MidiConfig,
 };
+
+const SNAP_GRID_SIZE: f32 = 16.0;
 
 pub struct UpdateContext {
     pub session_time: Duration,
@@ -146,6 +148,13 @@ impl Session {
         }
     }
 
+    pub fn snap_device_to_grid(&mut self, device_id: DeviceId) {
+        if let Some(device) = self.devices.get_mut(&device_id) {
+            let snapped = (device.get_position() / SNAP_GRID_SIZE).round() * SNAP_GRID_SIZE;
+            device.set_position(snapped);
+        }
+    }
+
     pub fn clear_selection(&mut self) {
         self.selected.clear();
     }
@@ -168,6 +177,13 @@ impl Session {
         for dev_id in self.selected.iter() {
             let pos = self.device_position(*dev_id).unwrap() + delta;
             self.devices.get_mut(dev_id).map(|d| d.set_position(pos));
+        }
+    }
+
+    pub fn snap_selected_to_grid(&mut self) {
+        let selected = self.selected.clone();
+        for dev_id in selected {
+            self.snap_device_to_grid(dev_id);
         }
     }
 
