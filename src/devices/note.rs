@@ -1,3 +1,5 @@
+use core::ops::Drop;
+
 use egui::{DragValue, FontId, RichText};
 use macroquad::{
     math::Vec2,
@@ -181,7 +183,19 @@ impl Device for Note {
 
         ui.horizontal(|ui| {
             ui.label("Octave");
+
+            let btn_size = egui::vec2(20.0, 20.0);
+            let dec_btn = ui.add_sized(btn_size, egui::Button::new("-"));
+            if dec_btn.clicked() {
+                octave -= 1;
+            }
+
             ui.add(DragValue::new(&mut octave).range(0..=8));
+
+            let inc_btn = ui.add_sized(btn_size, egui::Button::new("+"));
+            if inc_btn.clicked() {
+                octave += 1;
+            }
         });
 
         ui.add_space(2.0);
@@ -191,6 +205,8 @@ impl Device for Note {
         if self.octave != octave || self.pitch_class != pitch {
             self.should_change_note = Some((octave, pitch));
         }
+
+        ui.add(egui::Slider::new(&mut self.velocity, 0..=127).text("Velocity"));
     }
 
     fn input_arity(&self) -> Arity {
