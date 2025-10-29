@@ -17,7 +17,7 @@ pub struct Clock {
     // if true, the clock's cycle duration is a fraction of a note length
     bpm_sync: bool,
 
-    // duration of clock cycle in seconds if not BPM synced
+    // duration of clock cycle in milliseconds if not BPM synced
     free_duration: f32,
 
     // duration of clock cycle as fraction of note length if BPM synced
@@ -65,17 +65,14 @@ impl Device for Clock {
     }
 
     fn update(&mut self, ctx: &mut UpdateContext, _inputs: Vec<bool>) -> Option<bool> {
-        let time_ms = ctx.session_time.as_secs_f32() * 1000.0;
-
-        let period_ms = if self.bpm_sync {
+        if self.bpm_sync {
             let (numerator, denominator) = self.bpm_duration;
-            let ms_per_note = 240_000.0 / (ctx.bpm as f32);
-            (numerator as f32 / denominator as f32) * ms_per_note
-        } else {
-            self.free_duration
-        };
+            let beat_period = (numerator as f32 / denominator as f32) * 4.0;
 
-        self.cycle_position = ((time_ms + self.offset * period_ms) % period_ms) / period_ms;
+            self.cycle_position = ((ctx.beat_clock / beat_period) + self.offset) % 1.0;
+        } else {
+            self.cycle_position = ((ctx.free_clock.as_secs_f32() * 1000.0 / self.free_duration) + self.offset) % 1.0;
+        }
 
         if self.cycle_position <= self.gate {
             Some(true)

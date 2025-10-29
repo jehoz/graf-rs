@@ -2,14 +2,10 @@ use core::{iter::Iterator, panic};
 
 use egui::Align2;
 use macroquad::{
-    input::{
+    camera::{set_camera, Camera2D}, input::{
         is_key_down, is_key_pressed, is_mouse_button_pressed, is_mouse_button_released,
         mouse_position, KeyCode, MouseButton,
-    },
-    math::{vec2, Rect, Vec2},
-    shapes::{draw_circle, draw_rectangle_lines},
-    ui::{hash, root_ui, widgets::Window},
-    window::{clear_background, screen_height, screen_width},
+    }, math::{vec2, Rect, Vec2}, shapes::{draw_circle, draw_line, draw_rectangle_lines}, ui::{hash, root_ui, widgets::Window}, window::{clear_background, screen_height, screen_width}
 };
 
 use crate::{
@@ -26,6 +22,7 @@ enum CursorState {
     DraggingConnectedWire(DeviceId, DeviceId),
     DraggingInvalidWire(DeviceId),
     DraggingSelectBox(Vec2),
+    PanningViewport(Vec2),
 }
 
 const INSPECTOR_WIDTH: f32 = 200.0;
@@ -33,6 +30,8 @@ const INSPECTOR_WIDTH: f32 = 200.0;
 pub struct App {
     session: Session,
     cursor: CursorState,
+
+    viewport_offset: Vec2,
 
     context_menu: Option<Vec2>,
 }
@@ -42,7 +41,7 @@ impl App {
         App {
             session: Session::new(),
             cursor: CursorState::Idle,
-
+            viewport_offset: Vec2::ZERO,
             context_menu: None,
         }
     }
@@ -53,36 +52,42 @@ impl App {
         let device_under_mouse = self.session.get_device_at(m_pos);
 
         match self.cursor {
-            CursorState::Idle => match device_under_mouse {
-                Some(id) => {
-                    if is_mouse_button_pressed(MouseButton::Left) {
-                        if !self.session.selected.contains(&id) {
-                            self.session.clear_selection();
-                            self.session.select_device(id);
-                        }
-                        self.cursor = CursorState::DraggingSelectedDevices(m_pos);
-                    }
-
-                    if is_mouse_button_pressed(MouseButton::Right) {
-                        self.cursor = CursorState::DraggingLooseWire(id);
-                    }
+            CursorState::Idle => {
+                if is_mouse_button_pressed(MouseButton::Middle) {
+                    self.cursor = CursorState::PanningViewport(m_pos);
                 }
-                None => {
-                    if is_mouse_button_pressed(MouseButton::Right) {
-                        let wire_under_mouse = self.session.get_wire_at(m_pos);
 
-                        match wire_under_mouse {
-                            Some((from_id, to_id)) => {
-                                self.session.disconnect_devices(from_id, to_id);
-                                self.cursor = CursorState::DraggingLooseWire(from_id);
+                match device_under_mouse {
+                    Some(id) => {
+                        if is_mouse_button_pressed(MouseButton::Left) {
+                            if !self.session.selected.contains(&id) {
+                                self.session.clear_selection();
+                                self.session.select_device(id);
                             }
-                            None => {
-                                self.context_menu = Some(m_pos);
-                            }
+                            self.cursor = CursorState::DraggingSelectedDevices(m_pos);
+                        }
+
+                        if is_mouse_button_pressed(MouseButton::Right) {
+                            self.cursor = CursorState::DraggingLooseWire(id);
                         }
                     }
-                    if is_mouse_button_pressed(MouseButton::Left) {
-                        self.cursor = CursorState::DraggingSelectBox(m_pos);
+                    None => {
+                        if is_mouse_button_pressed(MouseButton::Right) {
+                            let wire_under_mouse = self.session.get_wire_at(m_pos);
+
+                            match wire_under_mouse {
+                                Some((from_id, to_id)) => {
+                                    self.session.disconnect_devices(from_id, to_id);
+                                    self.cursor = CursorState::DraggingLooseWire(from_id);
+                                }
+                                None => {
+                                    self.context_menu = Some(m_pos);
+                                }
+                            }
+                        }
+                        if is_mouse_button_pressed(MouseButton::Left) {
+                            self.cursor = CursorState::DraggingSelectBox(m_pos);
+                        }
                     }
                 }
             },
@@ -139,6 +144,7 @@ impl App {
                     }
                 }
             }
+
             CursorState::DraggingSelectBox(starting_corner) => {
                 if is_mouse_button_released(MouseButton::Left) {
                     self.cursor = CursorState::Idle;
@@ -150,6 +156,15 @@ impl App {
 
                     self.session.clear_selection();
                     self.session.select_devices_in_rect(rect);
+                }
+            }
+
+            CursorState::PanningViewport(from) => {
+                self.viewport_offset += m_pos - from;
+                self.cursor = CursorState::PanningViewport(m_pos);
+
+                if is_mouse_button_released(MouseButton::Middle) {
+                    self.cursor = CursorState::Idle;
                 }
             }
         }
@@ -218,6 +233,30 @@ impl App {
                     }
                 });
         }
+
+        egui::TopBottomPanel::bottom("bottom infobar").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("BPM");
+                ui.add(egui::DragValue::new(&mut self.session.update_ctx.bpm).range(20..=777));
+
+                ui.separator();
+
+                ui.label(format!("Beat {:.1}", self.session.update_ctx.beat_clock));
+
+                let pause_play_text = if self.session.update_ctx.is_paused {
+                    "Play "
+                } else {
+                    "Pause"
+                };
+                if ui.button(pause_play_text).clicked() {
+                    self.session.toggle_pause();
+                }
+
+                if ui.button("Reset").clicked() {
+                    self.session.reset_clock();
+                }
+            });
+        });
     }
 
     pub fn draw(&self) {
@@ -227,7 +266,7 @@ impl App {
         clear_background(self.session.draw_ctx.bg_color);
 
         match self.cursor {
-            CursorState::Idle | CursorState::DraggingSelectedDevices(_) => {}
+            CursorState::Idle | CursorState::DraggingSelectedDevices(_) | CursorState::PanningViewport(_) => {}
             CursorState::DraggingLooseWire(from_id) => {
                 let from_dev = self.session.devices.get(&from_id).unwrap();
                 draw_wire_from_device(from_dev.as_ref(), m_pos, self.session.draw_ctx.fg_color);

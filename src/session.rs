@@ -16,9 +16,12 @@ use crate::{
 const SNAP_GRID_SIZE: f32 = 16.0;
 
 pub struct UpdateContext {
-    pub session_time: Duration,
-    pub last_update: Instant,
+    pub beat_clock: f32,
+    pub free_clock: Duration,
     pub bpm: u32,
+
+    pub this_update: Instant,
+    pub last_update: Instant,
 
     pub is_paused: bool,
 
@@ -28,9 +31,12 @@ pub struct UpdateContext {
 impl UpdateContext {
     pub fn new() -> Self {
         UpdateContext {
-            session_time: Duration::ZERO,
-            last_update: Instant::now(),
+            beat_clock: 0.0,
+            free_clock: Duration::ZERO,
             bpm: 120,
+
+            this_update: Instant::now(),
+            last_update: Instant::now(),
 
             is_paused: false,
 
@@ -254,13 +260,22 @@ impl Session {
         self.update_ctx.is_paused = !self.update_ctx.is_paused;
     }
 
+    pub fn reset_clock(&mut self) {
+        self.update_ctx.beat_clock = 0.0;
+        self.update_ctx.free_clock = Duration::ZERO;
+        self.update_ctx.last_update = Instant::now();
+    }
+
     pub fn update(&mut self) {
-        if self.update_ctx.is_paused {
-            self.update_ctx.last_update = Instant::now();
-        } else {
-            let now = Instant::now();
-            self.update_ctx.session_time += now - self.update_ctx.last_update;
-            self.update_ctx.last_update = now;
+        self.update_ctx.this_update = Instant::now();
+
+        if !self.update_ctx.is_paused {
+            let time_elapsed = self.update_ctx.this_update - self.update_ctx.last_update;
+            let beats_elapsed = time_elapsed.as_secs_f32() * (self.update_ctx.bpm as f32 / 60.0);
+
+            self.update_ctx.free_clock += time_elapsed;
+            self.update_ctx.beat_clock += beats_elapsed;
+
         }
 
         let mut device_outputs: HashMap<DeviceId, bool> = HashMap::new();
@@ -276,6 +291,8 @@ impl Session {
                 device_outputs.insert(*dev_id, output);
             }
         }
+
+        self.update_ctx.last_update = self.update_ctx.this_update;
     }
 
     pub fn draw(&self) {
