@@ -89,6 +89,7 @@ impl Session {
     pub fn add_device(&mut self, device: Box<dyn Device>) -> DeviceId {
         let id = self.circuit.add_vertex();
         self.devices.insert(id, device);
+        self.snap_device_to_grid(id);
         id
     }
 
@@ -137,6 +138,8 @@ impl Session {
     pub fn can_connect(&self, from: DeviceId, to: DeviceId) -> bool {
         let to_dev = self.devices.get(&to).unwrap();
         if to_dev.input_arity() == Arity::Nullary {
+            return false;
+        } else if to_dev.input_arity() == Arity::Unary && self.circuit.parents(to).count() > 0 {
             return false;
         }
 
