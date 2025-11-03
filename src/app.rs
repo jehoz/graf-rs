@@ -31,8 +31,6 @@ pub struct App {
     session: Session,
     cursor: CursorState,
 
-    viewport_offset: Vec2,
-
     context_menu: Option<Vec2>,
 }
 
@@ -41,7 +39,6 @@ impl App {
         App {
             session: Session::new(),
             cursor: CursorState::Idle,
-            viewport_offset: Vec2::ZERO,
             context_menu: None,
         }
     }
@@ -160,7 +157,7 @@ impl App {
             }
 
             CursorState::PanningViewport(from) => {
-                self.viewport_offset += m_pos - from;
+                self.session.move_viewport(m_pos - from);
                 self.cursor = CursorState::PanningViewport(m_pos);
 
                 if is_mouse_button_released(MouseButton::Middle) {
@@ -217,24 +214,30 @@ impl App {
                 .fixed_pos(pos.to_array())
                 .show(ctx, |ui| {
                     if ui.button("Clock").clicked() {
-                        let clock = Clock::new(pos);
+                        let clock = Clock::new(self.session.draw_ctx.viewport_to_world(pos));
                         self.session.add_device(Box::new(clock));
                         self.context_menu = None;
                     }
                     if ui.button("Gate").clicked() {
-                        let gate = Gate::new(pos);
+                        let gate = Gate::new(self.session.draw_ctx.viewport_to_world(pos));
                         self.session.add_device(Box::new(gate));
                         self.context_menu = None;
                     }
                     if ui.button("Note").clicked() {
-                        let note = Note::new(pos);
+                        let note = Note::new(self.session.draw_ctx.viewport_to_world(pos));
                         self.session.add_device(Box::new(note));
                         self.context_menu = None;
                     }
                 });
         }
 
-        egui::TopBottomPanel::bottom("bottom infobar").show(ctx, |ui| {
+        egui::TopBottomPanel::top("top bar").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.button("Save Session")
+            });
+        });
+
+        egui::TopBottomPanel::bottom("bottom bar").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("BPM");
                 ui.add(egui::DragValue::new(&mut self.session.update_ctx.bpm).range(20..=777));
@@ -269,12 +272,12 @@ impl App {
             CursorState::Idle | CursorState::DraggingSelectedDevices(_) | CursorState::PanningViewport(_) => {}
             CursorState::DraggingLooseWire(from_id) => {
                 let from_dev = self.session.devices.get(&from_id).unwrap();
-                draw_wire_from_device(from_dev.as_ref(), m_pos, self.session.draw_ctx.fg_color);
+                draw_wire_from_device(&self.session.draw_ctx, from_dev.as_ref(), m_pos, self.session.draw_ctx.fg_color);
             }
             CursorState::DraggingConnectedWire(from_id, to_id) => {
                 let from_dev = self.session.devices.get(&from_id).unwrap();
                 let to_dev = self.session.devices.get(&to_id).unwrap();
-                draw_wire_between_devices(
+                draw_wire_between_devices(&self.session.draw_ctx, 
                     from_dev.as_ref(),
                     to_dev.as_ref(),
                     self.session.draw_ctx.fg_color,
@@ -282,7 +285,7 @@ impl App {
             }
             CursorState::DraggingInvalidWire(from_id) => {
                 let from_dev = self.session.devices.get(&from_id).unwrap();
-                draw_wire_from_device(from_dev.as_ref(), m_pos, self.session.draw_ctx.err_color);
+                draw_wire_from_device(&self.session.draw_ctx, from_dev.as_ref(), m_pos, self.session.draw_ctx.err_color);
             }
             CursorState::DraggingSelectBox(starting_corner) => {
                 let top = f32::min(starting_corner.y, m_pos.y);

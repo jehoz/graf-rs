@@ -71,7 +71,7 @@ impl Device for Gate {
     }
 
     fn draw(&self, ctx: &DrawContext, is_selected: bool) {
-        let Vec2 { x, y } = self.position;
+        let Vec2 { x, y } = ctx.world_to_viewport(self.position);
 
         if is_selected {
             draw_rectangle_lines(

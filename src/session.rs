@@ -49,6 +49,7 @@ pub struct DrawContext {
     pub fg_color: Color,
     pub bg_color: Color,
     pub err_color: Color,
+    pub viewport_offset: Vec2,
 }
 
 impl DrawContext {
@@ -57,7 +58,17 @@ impl DrawContext {
             fg_color: WHITE,
             bg_color: BLACK,
             err_color: RED,
+
+            viewport_offset: Vec2::ZERO,
         }
+    }
+
+    pub fn world_to_viewport(&self, world_coords: Vec2) -> Vec2 {
+        world_coords + self.viewport_offset
+    }
+
+    pub fn viewport_to_world(&self, viewport_coords: Vec2) -> Vec2 {
+        viewport_coords - self.viewport_offset
     }
 }
 
@@ -102,17 +113,19 @@ impl Session {
         self.circuit.remove_edge((from, to))
     }
 
-    pub fn get_device_at(&self, point: Vec2) -> Option<DeviceId> {
+    pub fn get_device_at(&self, viewport_pos: Vec2) -> Option<DeviceId> {
+        let world_pos = self.draw_ctx.viewport_to_world(viewport_pos);
         for (id, device) in self.devices.iter() {
-            if device.is_point_inside(point) {
+            if device.is_point_inside(world_pos) {
                 return Some(*id);
             }
         }
         None
     }
 
-    pub fn get_wire_at(&self, point: Vec2) -> Option<Edge> {
+    pub fn get_wire_at(&self, viewport_pos: Vec2) -> Option<Edge> {
         const WIRE_CLICKABLE_DISTANCE: f32 = 5.0;
+        let world_pos = self.draw_ctx.viewport_to_world(viewport_pos);
 
         for (from_id, to_id) in self.circuit.edges() {
             let u = self.device_position(*from_id).unwrap();
@@ -124,10 +137,10 @@ impl Session {
                 return None;
             }
 
-            let t = ((point - u).dot(v - u) / len2).clamp(0.0, 1.0);
+            let t = ((world_pos - u).dot(v - u) / len2).clamp(0.0, 1.0);
             let point_on_line = u + t * (v - u);
 
-            if point.distance(point_on_line) < WIRE_CLICKABLE_DISTANCE {
+            if world_pos.distance(point_on_line) < WIRE_CLICKABLE_DISTANCE {
                 return Some((*from_id, *to_id));
             }
         }
@@ -174,9 +187,10 @@ impl Session {
         }
     }
 
-    pub fn select_devices_in_rect(&mut self, rect: Rect) {
+    pub fn select_devices_in_rect(&mut self, viewport_rect: Rect) {
+        let world_rect = viewport_rect.offset(self.draw_ctx.viewport_offset * -1.0);
         for (id, device) in self.devices.iter() {
-            if rect.contains(device.get_position()) {
+            if world_rect.contains(device.get_position()) {
                 self.selected.push(*id);
             }
         }
@@ -236,7 +250,8 @@ impl Session {
         self.clipboard = (devices, edges);
     }
 
-    pub fn paste_clipboard(&mut self, position: Vec2) {
+    pub fn paste_clipboard(&mut self, viewport_pos: Vec2) {
+        let world_pos = self.draw_ctx.viewport_to_world(viewport_pos);
         let (devices, edges) = &self.clipboard;
 
         let mut new_devices = HashMap::new();
@@ -248,7 +263,7 @@ impl Session {
         let mut dev_id_map = HashMap::new();
         for (old_id, device) in new_devices.drain() {
             let new_id = self.add_device(device);
-            self.move_device(new_id, position);
+            self.move_device(new_id, world_pos);
             dev_id_map.insert(old_id, new_id);
         }
 
@@ -257,6 +272,10 @@ impl Session {
             let to = dev_id_map.get(old_to).unwrap();
             self.connect_devices(*from, *to);
         }
+    }
+
+    pub fn move_viewport(&mut self, delta: Vec2) {
+        self.draw_ctx.viewport_offset += delta;
     }
 
     pub fn toggle_pause(&mut self) {
@@ -306,7 +325,7 @@ impl Session {
         for (from_id, to_id) in self.circuit.edges() {
             let from_dev = self.devices.get(&from_id).unwrap();
             let to_dev = self.devices.get(&to_id).unwrap();
-            draw_wire_between_devices(from_dev.as_ref(), to_dev.as_ref(), self.draw_ctx.fg_color);
+            draw_wire_between_devices(&self.draw_ctx, from_dev.as_ref(), to_dev.as_ref(), self.draw_ctx.fg_color);
         }
     }
 }

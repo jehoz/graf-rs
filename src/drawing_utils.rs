@@ -4,7 +4,7 @@ use macroquad::{
     shapes::{draw_line, draw_poly},
 };
 
-use crate::devices::Device;
+use crate::{devices::Device, session::DrawContext};
 
 type Path = Vec<Vec2>;
 
@@ -53,13 +53,13 @@ pub fn draw_wire(from: Vec2, to: Vec2, color: Color) {
     draw_arrow_path(path, 1.0, 6.0, color);
 }
 
-pub fn draw_wire_from_device<D: Device + ?Sized>(from_dev: &D, to: Vec2, color: Color) {
-    let from_pos = from_dev.closest_border_point(to, 3.0);
-    draw_wire(from_pos, to, color);
+pub fn draw_wire_from_device<D: Device + ?Sized>(draw_ctx: &DrawContext, from_dev: &D, to: Vec2, color: Color) {
+    let from_pos = from_dev.closest_border_point(draw_ctx.viewport_to_world(to), 3.0);
+    draw_wire(draw_ctx.world_to_viewport(from_pos), to, color);
 }
 
-pub fn draw_wire_between_devices<D: Device + ?Sized>(from_dev: &D, to_dev: &D, color: Color) {
+pub fn draw_wire_between_devices<D: Device + ?Sized>(draw_ctx: &DrawContext, from_dev: &D, to_dev: &D, color: Color) {
     let from_pos = from_dev.closest_border_point(to_dev.get_position(), 3.0);
     let to_pos = to_dev.closest_border_point(from_dev.get_position(), 3.0);
-    draw_wire(from_pos, to_pos, color);
+    draw_wire(draw_ctx.world_to_viewport(from_pos), draw_ctx.world_to_viewport(to_pos), color);
 }
