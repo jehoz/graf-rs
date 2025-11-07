@@ -10,7 +10,7 @@ use macroquad::{
 
 use crate::{
     dag::DeviceId,
-    devices::{clock::Clock, gate::Gate, note::Note},
+    devices::{clock::Clock, gate::Gate, note::Note, trigger::Trigger},
     drawing_utils::{draw_wire_between_devices, draw_wire_from_device},
     session::Session,
 };
@@ -218,6 +218,11 @@ impl App {
                         self.session.add_device(Box::new(clock));
                         self.context_menu = None;
                     }
+                    if ui.button("Trigger").clicked() {
+                        let trigger = Trigger::new(self.session.draw_ctx.viewport_to_world(pos));
+                        self.session.add_device(Box::new(trigger));
+                        self.context_menu = None;
+                    }
                     if ui.button("Gate").clicked() {
                         let gate = Gate::new(self.session.draw_ctx.viewport_to_world(pos));
                         self.session.add_device(Box::new(gate));
@@ -229,6 +234,10 @@ impl App {
                         self.context_menu = None;
                     }
                 });
+
+            if is_key_pressed(KeyCode::Escape) {
+                self.context_menu = None;
+            }
         }
 
         egui::TopBottomPanel::top("top bar").show(ctx, |ui| {
