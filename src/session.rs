@@ -10,7 +10,6 @@ use crate::{
     dag::{Dag, DeviceId, Edge},
     devices::{Arity, Device},
     drawing_utils::draw_wire_between_devices,
-    midi::MidiConfig,
 };
 
 const SNAP_GRID_SIZE: f32 = 16.0;
@@ -24,8 +23,6 @@ pub struct UpdateContext {
     pub last_update: Instant,
 
     pub is_paused: bool,
-
-    pub midi_config: MidiConfig,
 }
 
 impl UpdateContext {
@@ -39,8 +36,6 @@ impl UpdateContext {
             last_update: Instant::now(),
 
             is_paused: false,
-
-            midi_config: MidiConfig::new(),
         }
     }
 }
@@ -282,10 +277,14 @@ impl Session {
         self.update_ctx.is_paused = !self.update_ctx.is_paused;
     }
 
-    pub fn reset_clock(&mut self) {
+    pub fn reset(&mut self) {
         self.update_ctx.beat_clock = 0.0;
         self.update_ctx.free_clock = Duration::ZERO;
         self.update_ctx.last_update = Instant::now();
+
+        for dev in self.devices.values_mut() {
+            dev.reset();
+        }
     }
 
     pub fn update(&mut self) {
@@ -297,7 +296,6 @@ impl Session {
 
             self.update_ctx.free_clock += time_elapsed;
             self.update_ctx.beat_clock += beats_elapsed;
-
         }
 
         let mut device_outputs: HashMap<DeviceId, bool> = HashMap::new();

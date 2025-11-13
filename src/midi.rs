@@ -1,12 +1,34 @@
+use core::cell::RefCell;
+use std::rc::Rc;
+use std::collections::VecDeque;
 use std::io::{stdin, stdout, Write};
 
 use midir::{MidiOutput, MidiOutputConnection, MidiOutputPorts};
 use midly::live::LiveEvent;
+use midly::num::u4;
+use midly::MidiMessage;
+
+// using this type alias because LiveEvents need lifetimes and I don't
+// want that to pollute my other types
+pub type MidiEvent = (u4, MidiMessage);
+
+#[derive(Clone)]
+pub struct MidiEventSender {
+    event_queue: Rc<RefCell<VecDeque<MidiEvent>>>
+}
+
+impl MidiEventSender {
+    pub fn send(&self, event: MidiEvent) {
+        self.event_queue.borrow_mut().push_back(event);
+    }
+}
 
 pub struct MidiConfig {
     // pub midi_out: MidiOutput,
     // pub ports: MidiOutputPorts,
     pub connection: Option<MidiOutputConnection>,
+
+    event_queue: Rc<RefCell<VecDeque<MidiEvent>>>,
 }
 
 impl MidiConfig {
@@ -43,18 +65,29 @@ impl MidiConfig {
             // midi_out,
             // ports,
             connection: Some(connection),
+
+            event_queue: Rc::new(RefCell::new(VecDeque::new())),
         }
     }
 
-    pub fn handle_live_event(&mut self, event: LiveEvent) {
+    pub fn process_events(&mut self) {
         match &mut self.connection {
             Some(conn) => {
-                let mut buf = Vec::new();
-                event.write(&mut buf).unwrap();
-                conn.send(&buf).unwrap();
+                for (channel, message) in self.event_queue.borrow_mut().drain(..) {
+                    let mut buf = Vec::new();
+                    let event = LiveEvent::Midi { channel, message };
+                    event.write(&mut buf).unwrap();
+                    conn.send(&buf).unwrap();
+                }
             }
 
             None => println!("Tried to send MIDI message but no connection"),
+        }
+    }
+
+    pub fn get_event_sender(&self) -> MidiEventSender {
+        MidiEventSender {
+            event_queue: self.event_queue.clone()
         }
     }
 }

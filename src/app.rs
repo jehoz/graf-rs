@@ -13,6 +13,7 @@ use crate::{
     devices::{clock::Clock, gate::Gate, note::Note, trigger::Trigger},
     drawing_utils::{draw_wire_between_devices, draw_wire_from_device},
     session::Session,
+    midi::MidiConfig,
 };
 
 enum CursorState {
@@ -32,6 +33,8 @@ pub struct App {
     cursor: CursorState,
 
     context_menu: Option<Vec2>,
+
+    midi_config: MidiConfig,
 }
 
 impl App {
@@ -40,6 +43,7 @@ impl App {
             session: Session::new(),
             cursor: CursorState::Idle,
             context_menu: None,
+            midi_config: MidiConfig::new(),
         }
     }
 
@@ -187,6 +191,8 @@ impl App {
 
     pub fn update(&mut self) {
         self.session.update();
+
+        self.midi_config.process_events();
     }
 
     pub fn ui(&mut self, ctx: &egui::Context) {
@@ -229,7 +235,8 @@ impl App {
                         self.context_menu = None;
                     }
                     if ui.button("Note").clicked() {
-                        let note = Note::new(self.session.draw_ctx.viewport_to_world(pos));
+                        let note = Note::new(self.session.draw_ctx.viewport_to_world(pos), 
+                                             self.midi_config.get_event_sender());
                         self.session.add_device(Box::new(note));
                         self.context_menu = None;
                     }
@@ -265,7 +272,7 @@ impl App {
                 }
 
                 if ui.button("Reset").clicked() {
-                    self.session.reset_clock();
+                    self.session.reset();
                 }
             });
         });

@@ -129,6 +129,10 @@ impl Device for Clock {
         ui.add(Slider::new(&mut self.offset, 0f32..=1.0f32).text("Offset"));
     }
 
+    fn reset(&mut self) {
+        self.cycle_position = 0.0;
+    }
+
     fn input_arity(&self) -> Arity {
         Arity::Nullary
     }

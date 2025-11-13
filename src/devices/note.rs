@@ -1,14 +1,11 @@
-use core::ops::Drop;
-
 use egui::{DragValue, FontId, RichText};
 use macroquad::{
     math::Vec2,
     shapes::{draw_circle, draw_circle_lines},
 };
-use midly::live::LiveEvent;
 
 use crate::{
-    midi::MidiConfig,
+    midi::MidiEventSender,
     session::{DrawContext, UpdateContext},
     widgets::note_picker::NotePicker,
 };
@@ -59,14 +56,13 @@ pub struct Note {
     pitch_class: PitchClass,
     velocity: u8,
 
+    event_sender: MidiEventSender,
+
     is_on: bool,
-    // use this outside of update so that we can clean up the midi state
-    // properly next time update is called
-    should_change_note: Option<(u8, PitchClass)>,
 }
 
 impl Note {
-    pub fn new(position: Vec2) -> Self {
+    pub fn new(position: Vec2, event_sender: MidiEventSender) -> Self {
         Note {
             position,
 
@@ -75,8 +71,9 @@ impl Note {
             pitch_class: PitchClass::C,
             velocity: 100,
 
+            event_sender,
+
             is_on: false,
-            should_change_note: None,
         }
     }
 
@@ -84,38 +81,44 @@ impl Note {
         self.pitch_class as u8 + self.octave * 12
     }
 
-    fn turn_on(&mut self, midi: &mut MidiConfig) {
+    fn turn_on(&mut self) {
         if self.is_on {
             return;
         }
 
-        let event = LiveEvent::Midi {
-            channel: self.midi_channel.into(),
-            message: midly::MidiMessage::NoteOn {
+        let event = (
+             self.midi_channel.into(),
+             midly::MidiMessage::NoteOn {
                 key: self.midi_key().into(),
                 vel: self.velocity.into(),
             },
-        };
+        );
+        self.event_sender.send(event);
 
-        midi.handle_live_event(event);
         self.is_on = true;
     }
 
-    fn turn_off(&mut self, midi: &mut MidiConfig) {
+    fn turn_off(&mut self) {
         if !self.is_on {
             return;
         }
 
-        let event = LiveEvent::Midi {
-            channel: self.midi_channel.into(),
-            message: midly::MidiMessage::NoteOff {
+        let event = (
+            self.midi_channel.into(),
+            midly::MidiMessage::NoteOff {
                 key: self.midi_key().into(),
                 vel: self.velocity.into(),
             },
-        };
+        );
+        self.event_sender.send(event);
 
-        midi.handle_live_event(event);
         self.is_on = false;
+    }
+}
+
+impl Drop for Note {
+    fn drop(&mut self) {
+        self.turn_off();
     }
 }
 
@@ -137,22 +140,15 @@ impl Device for Note {
         self.position.distance(pt) <= NOTE_RADIUS
     }
 
-    fn update(&mut self, ctx: &mut UpdateContext, inputs: Vec<bool>) -> Option<bool> {
-        if let Some((octave, pitch)) = self.should_change_note {
-            self.turn_off(&mut ctx.midi_config);
-            self.octave = octave;
-            self.pitch_class = pitch;
-            self.should_change_note = None;
-        }
-
+    fn update(&mut self, _ctx: &mut UpdateContext, inputs: Vec<bool>) -> Option<bool> {
         if let Some(input_on) = inputs.first() {
             if *input_on {
-                self.turn_on(&mut ctx.midi_config);
+                self.turn_on();
             } else {
-                self.turn_off(&mut ctx.midi_config);
+                self.turn_off();
             }
         } else {
-            self.turn_off(&mut ctx.midi_config);
+            self.turn_off();
         }
         None
     }
@@ -168,6 +164,10 @@ impl Device for Note {
         if self.is_on {
             draw_circle(x, y, NOTE_RADIUS / 2.0, ctx.fg_color);
         }
+    }
+
+    fn reset(&mut self) {
+        self.turn_off();
     }
 
     fn inspector(&mut self, ui: &mut egui::Ui) {
@@ -203,7 +203,9 @@ impl Device for Note {
         ui.add(NotePicker::new(&mut pitch));
 
         if self.octave != octave || self.pitch_class != pitch {
-            self.should_change_note = Some((octave, pitch));
+            self.turn_off();
+            self.octave = octave;
+            self.pitch_class = pitch;
         }
 
         ui.add(egui::Slider::new(&mut self.velocity, 0..=127).text("Velocity"));
