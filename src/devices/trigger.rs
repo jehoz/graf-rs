@@ -7,6 +7,7 @@ use macroquad::{
 
 use egui::{Slider, FontId, RichText};
 
+use crate::session::{DrawContext, UpdateContext};
 use crate::devices::{Arity, Device, TRIGGER_RADIUS};
 
 #[derive(Clone)]
@@ -63,7 +64,7 @@ impl Device for Trigger {
         self.position.distance(pt) <= TRIGGER_RADIUS
     }
 
-    fn update(&mut self, ctx: &mut crate::session::UpdateContext, inputs: Vec<bool>) -> Option<bool> {
+    fn update(&mut self, ctx: &mut UpdateContext, inputs: Vec<bool>) -> Option<bool> {
         let input_on = inputs.first().map(|x| *x).unwrap_or(false);
         if self.retrigger_mode {
             if input_on && self.ready_to_fire {
@@ -96,7 +97,7 @@ impl Device for Trigger {
 
     }
 
-    fn draw(&self, ctx: &crate::session::DrawContext, is_selected: bool) {
+    fn draw(&self, ctx: &DrawContext, is_selected: bool) {
         let Vec2 { x, y } = ctx.world_to_viewport(self.position);
 
         if is_selected {
