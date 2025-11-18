@@ -1,9 +1,8 @@
 use core::cell::RefCell;
 use std::rc::Rc;
 use std::collections::VecDeque;
-use std::io::{stdin, stdout, Write};
 
-use midir::{MidiOutput, MidiOutputConnection, MidiOutputPorts};
+use midir::{MidiOutput, MidiOutputConnection, MidiOutputPort};
 use midly::live::LiveEvent;
 use midly::num::u4;
 use midly::MidiMessage;
@@ -24,8 +23,8 @@ impl MidiEventSender {
 }
 
 pub struct MidiConfig {
-    // pub midi_out: MidiOutput,
-    // pub ports: MidiOutputPorts,
+    pub midi_out: MidiOutput,
+    pub ports: Vec<(String, MidiOutputPort, bool)>,
     pub connection: Option<MidiOutputConnection>,
 
     event_queue: Rc<RefCell<VecDeque<MidiEvent>>>,
@@ -34,54 +33,43 @@ pub struct MidiConfig {
 impl MidiConfig {
     pub fn new() -> Self {
         let midi_out = MidiOutput::new("graf").unwrap();
-
-        let ports = midi_out.ports();
-
-        let out_port = match ports.len() {
-            0 => panic!("No output MIDI ports found!!!"),
-            1 => {
-                println!("Connecting to: {}", midi_out.port_name(&ports[0]).unwrap());
-                &ports[0]
-            }
-            _ => {
-                println!("Available ports:");
-                for (i, p) in ports.iter().enumerate() {
-                    println!("{}: {}", i, midi_out.port_name(p).unwrap());
-                }
-                print!("Please select output port: ");
-                stdout().flush().unwrap();
-                let mut input = String::new();
-                stdin().read_line(&mut input).unwrap();
-                ports
-                    .get(input.trim().parse::<usize>().unwrap())
-                    .ok_or("invalid output port selected")
-                    .unwrap()
-            }
-        };
-
-        let connection = midi_out.connect(out_port, "graf-midi").unwrap();
-
-        MidiConfig {
-            // midi_out,
-            // ports,
-            connection: Some(connection),
+        let mut midi_cfg = MidiConfig {
+            midi_out,
+            ports: vec![],
+            connection: None,
 
             event_queue: Rc::new(RefCell::new(VecDeque::new())),
+        };
+
+        midi_cfg.refresh_ports();
+
+        midi_cfg
+    }
+
+    pub fn refresh_ports(&mut self) {
+        self.ports.clear();
+        for port in self.midi_out.ports() {
+            self.ports.push((self.midi_out.port_name(&port).unwrap(), port, false));
+        }
+    }
+
+    pub fn connect_to_port(&mut self, port: &MidiOutputPort) {
+        let midi_conn_out = MidiOutput::new("graf-connection-output").unwrap();
+        self.connection = Some(midi_conn_out.connect(port, "graf-midi").unwrap());
+
+        for (_name, p, connected) in self.ports.iter_mut() {
+            *connected = port == p;
         }
     }
 
     pub fn process_events(&mut self) {
-        match &mut self.connection {
-            Some(conn) => {
-                for (channel, message) in self.event_queue.borrow_mut().drain(..) {
-                    let mut buf = Vec::new();
-                    let event = LiveEvent::Midi { channel, message };
-                    event.write(&mut buf).unwrap();
-                    conn.send(&buf).unwrap();
-                }
+        if let Some(conn) = &mut self.connection {
+            for (channel, message) in self.event_queue.borrow_mut().drain(..) {
+                let mut buf = Vec::new();
+                let event = LiveEvent::Midi { channel, message };
+                event.write(&mut buf).unwrap();
+                conn.send(&buf).unwrap();
             }
-
-            None => println!("Tried to send MIDI message but no connection"),
         }
     }
 

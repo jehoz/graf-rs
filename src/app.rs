@@ -1,6 +1,6 @@
 use core::{iter::Iterator, panic};
 
-use egui::Align2;
+use egui::{menu, Align2};
 use macroquad::{
     camera::{set_camera, Camera2D}, input::{
         is_key_down, is_key_pressed, is_mouse_button_pressed, is_mouse_button_released,
@@ -205,7 +205,7 @@ impl App {
                         .title_bar(false)
                         .default_width(INSPECTOR_WIDTH)
                         .resizable(false)
-                        .show(ctx, |ui| dev.inspector(ui));
+                        .show(ctx, |ui| { dev.inspector(ui)});
                 }
                 None => {
                     panic!("Tried to inspect device that doesn't exist???")
@@ -248,10 +248,27 @@ impl App {
         }
 
         egui::TopBottomPanel::top("top bar").show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.button("Save Session")
+            menu::bar(ui, |ui| {
+                ui.menu_button("MIDI Setup", |ui| {
+                
+                    ui.horizontal(|ui| {
+                        ui.label("Ports: ");
+                        if ui.button("🔃").clicked() {
+                            self.midi_config.refresh_ports();
+                        }
+                    });
+                    
+
+                    for (name, port, connected) in self.midi_config.ports.clone() {
+                        if ui.add_enabled(!connected, egui::Button::new(name)).clicked() {
+                            self.midi_config.connect_to_port(&port);
+                        }
+                    }
+                    
+                });
             });
         });
+        
 
         egui::TopBottomPanel::bottom("bottom bar").show(ctx, |ui| {
             ui.horizontal(|ui| {
