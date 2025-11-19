@@ -1,4 +1,4 @@
-use core::{iter::Iterator, panic};
+use core::panic;
 
 use egui::{menu, Align2};
 use macroquad::{
@@ -10,7 +10,7 @@ use macroquad::{
 
 use crate::{
     dag::DeviceId,
-    devices::{clock::Clock, gate::Gate, note::Note, trigger::Trigger},
+    devices::{clock::Clock, gate::Gate, note::Note, trigger::Trigger, latch::Latch},
     drawing_utils::{draw_wire_between_devices, draw_wire_from_device},
     session::Session,
     midi::MidiConfig,
@@ -227,6 +227,11 @@ impl App {
                     if ui.button("Trigger").clicked() {
                         let trigger = Trigger::new(self.session.draw_ctx.viewport_to_world(pos));
                         self.session.add_device(Box::new(trigger));
+                        self.context_menu = None;
+                    }
+                    if ui.button("Latch").clicked() {
+                        let latch = Latch::new(self.session.draw_ctx.viewport_to_world(pos));
+                        self.session.add_device(Box::new(latch));
                         self.context_menu = None;
                     }
                     if ui.button("Gate").clicked() {

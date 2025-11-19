@@ -4,14 +4,16 @@ use macroquad::prelude::Vec2;
 use crate::session::{DrawContext, UpdateContext};
 
 pub mod clock;
-pub mod trigger;
 pub mod gate;
 pub mod note;
+pub mod trigger;
+pub mod latch;
 
 const CLOCK_RADIUS: f32 = 12.0;
 const GATE_WIDTH: f32 = 24.0;
 const NOTE_RADIUS: f32 = 12.0;
 const TRIGGER_RADIUS: f32 = 12.0;
+const LATCH_RADIUS: f32 = 12.0;
 
 #[derive(PartialEq)]
 pub enum Arity {
