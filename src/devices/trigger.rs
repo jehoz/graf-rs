@@ -113,6 +113,13 @@ impl Device for Trigger {
         }
     }
 
+    fn reset(&mut self) {
+        self.ready_to_fire = true;
+        self.time_remaining = None;
+
+        self.prev_clock_time = Duration::ZERO;
+    }
+
     fn inspector(&mut self, ui: &mut egui::Ui) {
         ui.label(
             RichText::new("Trigger")
