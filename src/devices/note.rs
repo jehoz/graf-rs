@@ -140,7 +140,12 @@ impl Device for Note {
         self.position.distance(pt) <= NOTE_RADIUS
     }
 
-    fn update(&mut self, _ctx: &mut UpdateContext, inputs: Vec<bool>) -> Option<bool> {
+    fn update(&mut self, ctx: &mut UpdateContext, inputs: Vec<bool>) -> Option<bool> {
+        if ctx.is_paused {
+            self.turn_off();
+            return None;
+        }
+
         if let Some(input_on) = inputs.first() {
             if *input_on {
                 self.turn_on();
