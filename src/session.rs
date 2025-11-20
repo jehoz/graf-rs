@@ -267,6 +267,11 @@ impl Session {
             let to = dev_id_map.get(old_to).unwrap();
             self.connect_devices(*from, *to);
         }
+
+        self.clear_selection();
+        for dev_id in dev_id_map.values() {
+            self.select_device(*dev_id);
+        }
     }
 
     pub fn move_viewport(&mut self, delta: Vec2) {
