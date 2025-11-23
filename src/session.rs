@@ -1,13 +1,14 @@
 use core::clone::Clone;
-use std::{collections::HashMap, time::{Instant, Duration}};
-
-use macroquad::{
-    color::{Color, BLACK, RED, WHITE},
-    math::{Rect, Vec2, IVec2},
+use std::{
+    collections::HashMap,
+    time::{Duration, Instant},
 };
 
+use macroquad::math::{Rect, Vec2};
+
 use crate::{
-    dag::{Dag, DeviceId, Edge},
+    app::DrawContext,
+    dag::{self, Dag, DeviceId, Edge},
     devices::{Arity, Device},
     drawing_utils::draw_wire_between_devices,
 };
@@ -40,33 +41,6 @@ impl UpdateContext {
     }
 }
 
-pub struct DrawContext {
-    pub fg_color: Color,
-    pub bg_color: Color,
-    pub err_color: Color,
-    pub viewport_offset: Vec2,
-}
-
-impl DrawContext {
-    pub fn new() -> Self {
-        DrawContext {
-            fg_color: WHITE,
-            bg_color: BLACK,
-            err_color: RED,
-
-            viewport_offset: Vec2::ZERO,
-        }
-    }
-
-    pub fn world_to_viewport(&self, world_coords: Vec2) -> Vec2 {
-        world_coords + self.viewport_offset
-    }
-
-    pub fn viewport_to_world(&self, viewport_coords: Vec2) -> Vec2 {
-        viewport_coords - self.viewport_offset
-    }
-}
-
 pub struct Session {
     pub devices: HashMap<DeviceId, Box<dyn Device>>,
     pub circuit: Dag,
@@ -75,7 +49,6 @@ pub struct Session {
     pub clipboard: (HashMap<DeviceId, Box<dyn Device>>, Vec<Edge>),
 
     pub update_ctx: UpdateContext,
-    pub draw_ctx: DrawContext,
 }
 
 impl Session {
@@ -88,7 +61,6 @@ impl Session {
             clipboard: (HashMap::new(), Vec::new()),
 
             update_ctx: UpdateContext::new(),
-            draw_ctx: DrawContext::new(),
         }
     }
 
@@ -101,26 +73,26 @@ impl Session {
 
     pub fn connect_devices(&mut self, from: DeviceId, to: DeviceId) {
         // just silently ignore any errors for now
-        let _ = self.circuit.add_edge((from, to));
+        if let Err(dag::IllegalEdgeError) = self.circuit.add_edge((from, to)) {
+            print!("Got IllegalEdgeError when trying to connected devices!!!");
+        }
     }
 
     pub fn disconnect_devices(&mut self, from: DeviceId, to: DeviceId) {
         self.circuit.remove_edge((from, to))
     }
 
-    pub fn get_device_at(&self, viewport_pos: Vec2) -> Option<DeviceId> {
-        let world_pos = self.draw_ctx.viewport_to_world(viewport_pos);
+    pub fn get_device_at(&self, position: Vec2) -> Option<DeviceId> {
         for (id, device) in self.devices.iter() {
-            if device.is_point_inside(world_pos) {
+            if device.is_point_inside(position) {
                 return Some(*id);
             }
         }
         None
     }
 
-    pub fn get_wire_at(&self, viewport_pos: Vec2) -> Option<Edge> {
+    pub fn get_wire_at(&self, position: Vec2) -> Option<Edge> {
         const WIRE_CLICKABLE_DISTANCE: f32 = 5.0;
-        let world_pos = self.draw_ctx.viewport_to_world(viewport_pos);
 
         for (from_id, to_id) in self.circuit.edges() {
             let u = self.device_position(*from_id).unwrap();
@@ -132,10 +104,10 @@ impl Session {
                 return None;
             }
 
-            let t = ((world_pos - u).dot(v - u) / len2).clamp(0.0, 1.0);
+            let t = ((position - u).dot(v - u) / len2).clamp(0.0, 1.0);
             let point_on_line = u + t * (v - u);
 
-            if world_pos.distance(point_on_line) < WIRE_CLICKABLE_DISTANCE {
+            if position.distance(point_on_line) < WIRE_CLICKABLE_DISTANCE {
                 return Some((*from_id, *to_id));
             }
         }
@@ -182,10 +154,9 @@ impl Session {
         }
     }
 
-    pub fn select_devices_in_rect(&mut self, viewport_rect: Rect) {
-        let world_rect = viewport_rect.offset(self.draw_ctx.viewport_offset * -1.0);
+    pub fn select_devices_in_rect(&mut self, rect: Rect) {
         for (id, device) in self.devices.iter() {
-            if world_rect.contains(device.get_position()) {
+            if rect.contains(device.get_position()) {
                 self.selected.push(*id);
             }
         }
@@ -245,8 +216,7 @@ impl Session {
         self.clipboard = (devices, edges);
     }
 
-    pub fn paste_clipboard(&mut self, viewport_pos: Vec2) {
-        let world_pos = self.draw_ctx.viewport_to_world(viewport_pos);
+    pub fn paste_clipboard(&mut self, position: Vec2) {
         let (devices, edges) = &self.clipboard;
 
         let mut new_devices = HashMap::new();
@@ -258,7 +228,7 @@ impl Session {
         let mut dev_id_map = HashMap::new();
         for (old_id, device) in new_devices.drain() {
             let new_id = self.add_device(device);
-            self.move_device(new_id, world_pos);
+            self.move_device(new_id, position);
             dev_id_map.insert(old_id, new_id);
         }
 
@@ -272,10 +242,6 @@ impl Session {
         for dev_id in dev_id_map.values() {
             self.select_device(*dev_id);
         }
-    }
-
-    pub fn move_viewport(&mut self, delta: Vec2) {
-        self.draw_ctx.viewport_offset += delta;
     }
 
     pub fn toggle_pause(&mut self) {
@@ -320,15 +286,20 @@ impl Session {
         self.update_ctx.last_update = self.update_ctx.this_update;
     }
 
-    pub fn draw(&self) {
-        for (dev_id, device) in &self.devices {
-            device.draw(&self.draw_ctx, self.selected.contains(dev_id));
-        }
-
+    pub fn draw(&self, draw_ctx: &DrawContext) {
         for (from_id, to_id) in self.circuit.edges() {
             let from_dev = self.devices.get(&from_id).unwrap();
             let to_dev = self.devices.get(&to_id).unwrap();
-            draw_wire_between_devices(&self.draw_ctx, from_dev.as_ref(), to_dev.as_ref(), self.draw_ctx.fg_color);
+            draw_wire_between_devices(
+                draw_ctx,
+                from_dev.as_ref(),
+                to_dev.as_ref(),
+                draw_ctx.colors.fg_2,
+            );
+        }
+
+        for (dev_id, device) in &self.devices {
+            device.draw(draw_ctx, self.selected.contains(dev_id));
         }
     }
 }

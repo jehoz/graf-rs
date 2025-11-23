@@ -1,10 +1,28 @@
+use egui::Color32;
 use macroquad::{
     color::Color,
     math::{vec2, Vec2},
     shapes::{draw_line, draw_poly},
 };
 
-use crate::{devices::Device, session::DrawContext};
+use crate::{app::DrawContext, devices::Device};
+
+pub struct ColorPalette {
+    pub fg_0: Color,
+    pub fg_1: Color,
+    pub fg_2: Color,
+    pub fg_3: Color,
+    pub bg_0: Color,
+    pub bg_1: Color,
+    pub bg_2: Color,
+    pub bg_3: Color,
+    pub error: Color,
+}
+
+pub fn color_to_color32(c: Color) -> Color32 {
+    let [r, g, b, _a] = c.into();
+    Color32::from_rgb(r, g, b)
+}
 
 type Path = Vec<Vec2>;
 
@@ -53,13 +71,27 @@ pub fn draw_wire(from: Vec2, to: Vec2, color: Color) {
     draw_arrow_path(path, 1.0, 6.0, color);
 }
 
-pub fn draw_wire_from_device<D: Device + ?Sized>(draw_ctx: &DrawContext, from_dev: &D, to: Vec2, color: Color) {
+pub fn draw_wire_from_device<D: Device + ?Sized>(
+    draw_ctx: &DrawContext,
+    from_dev: &D,
+    to: Vec2,
+    color: Color,
+) {
     let from_pos = from_dev.closest_border_point(draw_ctx.viewport_to_world(to), 3.0);
     draw_wire(draw_ctx.world_to_viewport(from_pos), to, color);
 }
 
-pub fn draw_wire_between_devices<D: Device + ?Sized>(draw_ctx: &DrawContext, from_dev: &D, to_dev: &D, color: Color) {
+pub fn draw_wire_between_devices<D: Device + ?Sized>(
+    draw_ctx: &DrawContext,
+    from_dev: &D,
+    to_dev: &D,
+    color: Color,
+) {
     let from_pos = from_dev.closest_border_point(to_dev.get_position(), 3.0);
     let to_pos = to_dev.closest_border_point(from_dev.get_position(), 3.0);
-    draw_wire(draw_ctx.world_to_viewport(from_pos), draw_ctx.world_to_viewport(to_pos), color);
+    draw_wire(
+        draw_ctx.world_to_viewport(from_pos),
+        draw_ctx.world_to_viewport(to_pos),
+        color,
+    );
 }

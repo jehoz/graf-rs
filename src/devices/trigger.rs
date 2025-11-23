@@ -2,13 +2,16 @@ use std::time::Duration;
 
 use macroquad::{
     math::Vec2,
-    shapes::{draw_circle, draw_circle_lines}
+    shapes::{draw_circle, draw_circle_lines},
 };
 
-use egui::{Slider, FontId, RichText};
+use egui::{FontId, RichText, Slider};
 
-use crate::session::{DrawContext, UpdateContext};
-use crate::devices::{Arity, Device, TRIGGER_RADIUS};
+use crate::session::UpdateContext;
+use crate::{
+    app::DrawContext,
+    devices::{Arity, Device, TRIGGER_RADIUS},
+};
 
 #[derive(Clone)]
 pub struct Trigger {
@@ -94,22 +97,27 @@ impl Device for Trigger {
         } else {
             Some(false)
         }
-
     }
 
     fn draw(&self, ctx: &DrawContext, is_selected: bool) {
         let Vec2 { x, y } = ctx.world_to_viewport(self.position);
 
         if is_selected {
-            draw_circle_lines(x, y, TRIGGER_RADIUS + 4.0, 2.0, ctx.fg_color.with_alpha(0.5));
+            draw_circle_lines(
+                x,
+                y,
+                TRIGGER_RADIUS + 4.0,
+                2.0,
+                ctx.colors.fg_0.with_alpha(0.5),
+            );
         }
 
-        draw_circle_lines(x, y, TRIGGER_RADIUS, 1.0, ctx.fg_color);
-        draw_circle(x, y, TRIGGER_RADIUS, ctx.bg_color);
+        draw_circle_lines(x, y, TRIGGER_RADIUS, 1.0, ctx.colors.fg_0);
+        draw_circle(x, y, TRIGGER_RADIUS, ctx.colors.bg_1);
 
         if let Some(t_rem) = self.time_remaining {
             let percent_done = (t_rem / self.duration).clamp(0.0, 1.0);
-            draw_circle(x, y, TRIGGER_RADIUS * percent_done, ctx.fg_color);
+            draw_circle(x, y, TRIGGER_RADIUS * percent_done, ctx.colors.fg_0);
         }
     }
 
@@ -129,8 +137,12 @@ impl Device for Trigger {
         ui.separator();
 
         ui.checkbox(&mut self.retrigger_mode, "Retrigger Mode");
-        
-        ui.add(Slider::new(&mut self.duration, 1f32..=10000f32).text("Duration").suffix("ms"));
+
+        ui.add(
+            Slider::new(&mut self.duration, 1f32..=10000f32)
+                .text("Duration")
+                .suffix("ms"),
+        );
     }
 
     fn input_arity(&self) -> super::Arity {

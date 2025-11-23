@@ -1,20 +1,22 @@
 use macroquad::{
     math::Vec2,
-    shapes::{draw_poly, draw_poly_lines}
+    shapes::{draw_poly, draw_poly_lines},
 };
 
 use egui::{FontId, RichText};
 
-use crate::session::{DrawContext, UpdateContext};
-use crate::devices::{Arity, Device, LATCH_RADIUS};
+use crate::session::UpdateContext;
+use crate::{
+    app::DrawContext,
+    devices::{Arity, Device, LATCH_RADIUS},
+};
 
 #[derive(Clone)]
 pub struct Latch {
     position: Vec2,
 
     is_on: bool,
-    prev_input: bool
-
+    prev_input: bool,
 }
 
 impl Latch {
@@ -63,14 +65,22 @@ impl Device for Latch {
         let angle = 90.0;
 
         if is_selected {
-            draw_poly_lines(x, y, 3, LATCH_RADIUS + 4.0, angle, 2.0, ctx.fg_color.with_alpha(0.5));
+            draw_poly_lines(
+                x,
+                y,
+                3,
+                LATCH_RADIUS + 4.0,
+                angle,
+                2.0,
+                ctx.colors.fg_0.with_alpha(0.5),
+            );
         }
 
-        draw_poly_lines(x, y, 3, LATCH_RADIUS, angle, 2.0, ctx.fg_color);
-        draw_poly(x, y, 3, LATCH_RADIUS, angle, ctx.bg_color);
-        
+        draw_poly_lines(x, y, 3, LATCH_RADIUS, angle, 2.0, ctx.colors.fg_0);
+        draw_poly(x, y, 3, LATCH_RADIUS, angle, ctx.colors.bg_1);
+
         if self.is_on {
-            draw_poly(x, y, 3, LATCH_RADIUS / 2.0, angle, ctx.fg_color);
+            draw_poly(x, y, 3, LATCH_RADIUS / 2.0, angle, ctx.colors.fg_0);
         }
     }
 

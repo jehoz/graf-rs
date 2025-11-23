@@ -5,8 +5,7 @@ use macroquad::{
 };
 
 use crate::{
-    midi::MidiEventSender,
-    session::{DrawContext, UpdateContext},
+    app::DrawContext, midi::MidiEventSender, session::UpdateContext,
     widgets::note_picker::NotePicker,
 };
 
@@ -87,8 +86,8 @@ impl Note {
         }
 
         let event = (
-             self.midi_channel.into(),
-             midly::MidiMessage::NoteOn {
+            self.midi_channel.into(),
+            midly::MidiMessage::NoteOn {
                 key: self.midi_key().into(),
                 vel: self.velocity.into(),
             },
@@ -162,12 +161,18 @@ impl Device for Note {
         let Vec2 { x, y } = ctx.world_to_viewport(self.position);
 
         if is_selected {
-            draw_circle_lines(x, y, NOTE_RADIUS + 4.0, 2.0, ctx.fg_color.with_alpha(0.5));
+            draw_circle_lines(
+                x,
+                y,
+                NOTE_RADIUS + 4.0,
+                2.0,
+                ctx.colors.fg_0.with_alpha(0.5),
+            );
         }
 
-        draw_circle_lines(x, y, NOTE_RADIUS, 1.0, ctx.fg_color);
+        draw_circle_lines(x, y, NOTE_RADIUS, 1.0, ctx.colors.fg_0);
         if self.is_on {
-            draw_circle(x, y, NOTE_RADIUS / 2.0, ctx.fg_color);
+            draw_circle(x, y, NOTE_RADIUS / 2.0, ctx.colors.fg_0);
         }
     }
 

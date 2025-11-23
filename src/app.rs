@@ -1,19 +1,24 @@
 use core::panic;
 
-use egui::{menu, Align2};
+use egui::{menu, style::WidgetVisuals, style::Widgets, Align2, CornerRadius, Stroke, Visuals};
 use macroquad::{
-    camera::{set_camera, Camera2D}, input::{
+    input::{
         is_key_down, is_key_pressed, is_mouse_button_pressed, is_mouse_button_released,
         mouse_position, KeyCode, MouseButton,
-    }, math::{vec2, Rect, Vec2}, shapes::{draw_circle, draw_line, draw_rectangle_lines}, ui::{hash, root_ui, widgets::Window}, window::{clear_background, screen_height, screen_width}
+    },
+    math::{vec2, Rect, Vec2},
+    shapes::draw_rectangle_lines,
+    window::clear_background,
 };
 
 use crate::{
     dag::DeviceId,
-    devices::{clock::Clock, gate::Gate, note::Note, trigger::Trigger, latch::Latch},
-    drawing_utils::{draw_wire_between_devices, draw_wire_from_device},
-    session::Session,
+    devices::{clock::Clock, gate::Gate, latch::Latch, note::Note, trigger::Trigger},
+    drawing_utils::{
+        color_to_color32, draw_wire_between_devices, draw_wire_from_device, ColorPalette,
+    },
     midi::MidiConfig,
+    session::Session,
 };
 
 enum CursorState {
@@ -28,9 +33,97 @@ enum CursorState {
 
 const INSPECTOR_WIDTH: f32 = 200.0;
 
+pub struct DrawContext {
+    pub colors: ColorPalette,
+    pub viewport_offset: Vec2,
+    pub egui_visuals: Visuals,
+}
+
+impl DrawContext {
+    pub fn new(colors: ColorPalette) -> Self {
+        let bg_0 = color_to_color32(colors.bg_0);
+        let bg_1 = color_to_color32(colors.bg_1);
+        let bg_2 = color_to_color32(colors.bg_2);
+        let bg_3 = color_to_color32(colors.bg_3);
+        let fg_0 = color_to_color32(colors.fg_0);
+        let fg_1 = color_to_color32(colors.fg_1);
+        let fg_2 = color_to_color32(colors.fg_2);
+        let fg_3 = color_to_color32(colors.fg_3);
+
+        let visuals = egui::Visuals {
+            extreme_bg_color: bg_0,
+            faint_bg_color: bg_2,
+            override_text_color: Some(fg_0),
+            window_fill: bg_1,
+            panel_fill: bg_1,
+
+            window_corner_radius: CornerRadius::ZERO,
+            menu_corner_radius: CornerRadius::ZERO,
+            widgets: Widgets {
+                noninteractive: WidgetVisuals {
+                    bg_fill: bg_0,
+                    weak_bg_fill: bg_0,
+                    bg_stroke: Stroke::new(1.0, bg_2),
+                    fg_stroke: Stroke::new(1.0, fg_3),
+                    corner_radius: CornerRadius::ZERO,
+                    expansion: 0.0,
+                },
+                inactive: WidgetVisuals {
+                    bg_fill: bg_2,
+                    weak_bg_fill: bg_2,
+                    bg_stroke: Default::default(),
+                    fg_stroke: Stroke::new(1.0, fg_2),
+                    corner_radius: CornerRadius::ZERO,
+                    expansion: 0.0,
+                },
+                hovered: WidgetVisuals {
+                    bg_fill: bg_3,
+                    weak_bg_fill: bg_3,
+                    bg_stroke: Stroke::new(1.0, fg_3),
+                    fg_stroke: Stroke::new(1.0, fg_1),
+                    corner_radius: CornerRadius::ZERO,
+                    expansion: 0.0,
+                },
+                active: WidgetVisuals {
+                    bg_fill: bg_1,
+                    weak_bg_fill: bg_1,
+                    bg_stroke: Stroke::new(1.0, fg_0),
+                    fg_stroke: Stroke::new(1.0, fg_0),
+                    corner_radius: CornerRadius::ZERO,
+                    expansion: 0.0,
+                },
+                open: WidgetVisuals {
+                    bg_fill: bg_1,
+                    weak_bg_fill: bg_0,
+                    bg_stroke: Stroke::new(1.0, bg_2),
+                    fg_stroke: Stroke::new(1.0, fg_1),
+                    corner_radius: CornerRadius::ZERO,
+                    expansion: 0.0,
+                },
+            },
+            ..Default::default()
+        };
+
+        DrawContext {
+            colors,
+            viewport_offset: Vec2::ZERO,
+            egui_visuals: visuals,
+        }
+    }
+
+    pub fn world_to_viewport(&self, world_coords: Vec2) -> Vec2 {
+        world_coords + self.viewport_offset
+    }
+
+    pub fn viewport_to_world(&self, viewport_coords: Vec2) -> Vec2 {
+        viewport_coords - self.viewport_offset
+    }
+}
+
 pub struct App {
     session: Session,
     cursor: CursorState,
+    draw_ctx: DrawContext,
 
     context_menu: Option<Vec2>,
 
@@ -38,10 +131,11 @@ pub struct App {
 }
 
 impl App {
-    pub fn new() -> Self {
+    pub fn new(colors: ColorPalette) -> Self {
         App {
             session: Session::new(),
             cursor: CursorState::Idle,
+            draw_ctx: DrawContext::new(colors),
             context_menu: None,
             midi_config: MidiConfig::new(),
         }
@@ -50,7 +144,9 @@ impl App {
     pub fn handle_inputs(&mut self) {
         let (mx, my) = mouse_position();
         let m_pos = vec2(mx, my);
-        let device_under_mouse = self.session.get_device_at(m_pos);
+        let device_under_mouse = self
+            .session
+            .get_device_at(self.draw_ctx.viewport_to_world(m_pos));
 
         match self.cursor {
             CursorState::Idle => {
@@ -74,7 +170,9 @@ impl App {
                     }
                     None => {
                         if is_mouse_button_pressed(MouseButton::Right) {
-                            let wire_under_mouse = self.session.get_wire_at(m_pos);
+                            let wire_under_mouse = self
+                                .session
+                                .get_wire_at(self.draw_ctx.viewport_to_world(m_pos));
 
                             match wire_under_mouse {
                                 Some((from_id, to_id)) => {
@@ -91,7 +189,7 @@ impl App {
                         }
                     }
                 }
-            },
+            }
 
             CursorState::DraggingSelectedDevices(from) => {
                 self.session.move_selected_devices(m_pos - from);
@@ -156,12 +254,13 @@ impl App {
                     let rect = Rect::new(left, top, delta.x, delta.y);
 
                     self.session.clear_selection();
-                    self.session.select_devices_in_rect(rect);
+                    self.session
+                        .select_devices_in_rect(rect.offset(self.draw_ctx.viewport_offset * -1.0));
                 }
             }
 
             CursorState::PanningViewport(from) => {
-                self.session.move_viewport(m_pos - from);
+                self.draw_ctx.viewport_offset += m_pos - from;
                 self.cursor = CursorState::PanningViewport(m_pos);
 
                 if is_mouse_button_released(MouseButton::Middle) {
@@ -180,7 +279,8 @@ impl App {
             }
 
             if is_key_pressed(KeyCode::V) {
-                self.session.paste_clipboard(m_pos);
+                self.session
+                    .paste_clipboard(self.draw_ctx.viewport_to_world(m_pos));
             }
         }
 
@@ -196,23 +296,7 @@ impl App {
     }
 
     pub fn ui(&mut self, ctx: &egui::Context) {
-        if let [selected_id] = self.session.selected.as_slice() {
-            match self.session.devices.get_mut(&selected_id) {
-                Some(dev) => {
-                    egui::Window::new("Edit Device")
-                        .anchor(Align2::RIGHT_TOP, [-10.0, 10.0])
-                        .movable(false)
-                        .title_bar(false)
-                        .default_width(INSPECTOR_WIDTH)
-                        .resizable(false)
-                        .show(ctx, |ui| { dev.inspector(ui)});
-                }
-                None => {
-                    panic!("Tried to inspect device that doesn't exist???")
-                }
-            }
-        }
-
+        ctx.set_visuals(self.draw_ctx.egui_visuals.clone());
         if let Some(pos) = self.context_menu {
             egui::Window::new("context menu")
                 .resizable(false)
@@ -220,28 +304,30 @@ impl App {
                 .fixed_pos(pos.to_array())
                 .show(ctx, |ui| {
                     if ui.button("Clock").clicked() {
-                        let clock = Clock::new(self.session.draw_ctx.viewport_to_world(pos));
+                        let clock = Clock::new(self.draw_ctx.viewport_to_world(pos));
                         self.session.add_device(Box::new(clock));
                         self.context_menu = None;
                     }
                     if ui.button("Trigger").clicked() {
-                        let trigger = Trigger::new(self.session.draw_ctx.viewport_to_world(pos));
+                        let trigger = Trigger::new(self.draw_ctx.viewport_to_world(pos));
                         self.session.add_device(Box::new(trigger));
                         self.context_menu = None;
                     }
                     if ui.button("Latch").clicked() {
-                        let latch = Latch::new(self.session.draw_ctx.viewport_to_world(pos));
+                        let latch = Latch::new(self.draw_ctx.viewport_to_world(pos));
                         self.session.add_device(Box::new(latch));
                         self.context_menu = None;
                     }
                     if ui.button("Gate").clicked() {
-                        let gate = Gate::new(self.session.draw_ctx.viewport_to_world(pos));
+                        let gate = Gate::new(self.draw_ctx.viewport_to_world(pos));
                         self.session.add_device(Box::new(gate));
                         self.context_menu = None;
                     }
                     if ui.button("Note").clicked() {
-                        let note = Note::new(self.session.draw_ctx.viewport_to_world(pos), 
-                                             self.midi_config.get_event_sender());
+                        let note = Note::new(
+                            self.draw_ctx.viewport_to_world(pos),
+                            self.midi_config.get_event_sender(),
+                        );
                         self.session.add_device(Box::new(note));
                         self.context_menu = None;
                     }
@@ -255,25 +341,24 @@ impl App {
         egui::TopBottomPanel::top("top bar").show(ctx, |ui| {
             menu::bar(ui, |ui| {
                 ui.menu_button("MIDI Setup", |ui| {
-                
                     ui.horizontal(|ui| {
                         ui.label("Ports: ");
                         if ui.button("🔃").clicked() {
                             self.midi_config.refresh_ports();
                         }
                     });
-                    
 
                     for (name, port, connected) in self.midi_config.ports.clone() {
-                        if ui.add_enabled(!connected, egui::Button::new(name)).clicked() {
+                        if ui
+                            .add_enabled(!connected, egui::Button::new(name))
+                            .clicked()
+                        {
                             self.midi_config.connect_to_port(&port);
                         }
                     }
-                    
                 });
             });
         });
-        
 
         egui::TopBottomPanel::bottom("bottom bar").show(ctx, |ui| {
             ui.horizontal(|ui| {
@@ -298,48 +383,72 @@ impl App {
                 }
             });
         });
+
+        if let [selected_id] = self.session.selected.as_slice() {
+            match self.session.devices.get_mut(&selected_id) {
+                Some(dev) => {
+                    egui::Window::new("Edit Device")
+                        .anchor(Align2::RIGHT_TOP, [-10.0, 30.0])
+                        .movable(false)
+                        .title_bar(false)
+                        .default_width(INSPECTOR_WIDTH)
+                        .resizable(false)
+                        .show(ctx, |ui| dev.inspector(ui));
+                }
+                None => {
+                    panic!("Tried to inspect device that doesn't exist???")
+                }
+            }
+        }
     }
 
     pub fn draw(&self) {
         let (mx, my) = mouse_position();
         let m_pos = vec2(mx, my);
 
-        clear_background(self.session.draw_ctx.bg_color);
+        clear_background(self.draw_ctx.colors.bg_0);
 
         match self.cursor {
-            CursorState::Idle | CursorState::DraggingSelectedDevices(_) | CursorState::PanningViewport(_) => {}
+            CursorState::Idle
+            | CursorState::DraggingSelectedDevices(_)
+            | CursorState::PanningViewport(_) => {}
+
             CursorState::DraggingLooseWire(from_id) => {
                 let from_dev = self.session.devices.get(&from_id).unwrap();
-                draw_wire_from_device(&self.session.draw_ctx, from_dev.as_ref(), m_pos, self.session.draw_ctx.fg_color);
+                draw_wire_from_device(
+                    &self.draw_ctx,
+                    from_dev.as_ref(),
+                    m_pos,
+                    self.draw_ctx.colors.fg_2,
+                );
             }
             CursorState::DraggingConnectedWire(from_id, to_id) => {
                 let from_dev = self.session.devices.get(&from_id).unwrap();
                 let to_dev = self.session.devices.get(&to_id).unwrap();
-                draw_wire_between_devices(&self.session.draw_ctx, 
+                draw_wire_between_devices(
+                    &self.draw_ctx,
                     from_dev.as_ref(),
                     to_dev.as_ref(),
-                    self.session.draw_ctx.fg_color,
+                    self.draw_ctx.colors.fg_0,
                 );
             }
             CursorState::DraggingInvalidWire(from_id) => {
                 let from_dev = self.session.devices.get(&from_id).unwrap();
-                draw_wire_from_device(&self.session.draw_ctx, from_dev.as_ref(), m_pos, self.session.draw_ctx.err_color);
+                draw_wire_from_device(
+                    &self.draw_ctx,
+                    from_dev.as_ref(),
+                    m_pos,
+                    self.draw_ctx.colors.error,
+                );
             }
             CursorState::DraggingSelectBox(starting_corner) => {
                 let top = f32::min(starting_corner.y, m_pos.y);
                 let left = f32::min(starting_corner.x, m_pos.x);
                 let delta = (m_pos - starting_corner).abs();
-                draw_rectangle_lines(
-                    left,
-                    top,
-                    delta.x,
-                    delta.y,
-                    1.0,
-                    self.session.draw_ctx.fg_color,
-                );
+                draw_rectangle_lines(left, top, delta.x, delta.y, 1.0, self.draw_ctx.colors.fg_2);
             }
         }
 
-        self.session.draw();
+        self.session.draw(&self.draw_ctx);
     }
 }

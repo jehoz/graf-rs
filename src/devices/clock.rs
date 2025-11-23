@@ -1,12 +1,10 @@
-use std::time::Instant;
-
-use egui::{Color32, DragValue, FontId, RichText, Slider};
+use egui::{DragValue, FontId, RichText, Slider};
 use macroquad::{
     math::Vec2,
     shapes::{draw_arc, draw_circle, draw_circle_lines},
 };
 
-use crate::session::{DrawContext, UpdateContext};
+use crate::{app::DrawContext, session::UpdateContext};
 
 use super::{Arity, Device, CLOCK_RADIUS};
 
@@ -71,7 +69,8 @@ impl Device for Clock {
 
             self.cycle_position = ((ctx.beat_clock / beat_period) + self.offset) % 1.0;
         } else {
-            self.cycle_position = ((ctx.free_clock.as_secs_f32() * 1000.0 / self.free_duration) + self.offset) % 1.0;
+            self.cycle_position =
+                ((ctx.free_clock.as_secs_f32() * 1000.0 / self.free_duration) + self.offset) % 1.0;
         }
 
         if self.cycle_position <= self.gate {
@@ -85,11 +84,17 @@ impl Device for Clock {
         let Vec2 { x, y } = ctx.world_to_viewport(self.position);
 
         if is_selected {
-            draw_circle_lines(x, y, CLOCK_RADIUS + 4.0, 2.0, ctx.fg_color.with_alpha(0.5));
+            draw_circle_lines(
+                x,
+                y,
+                CLOCK_RADIUS + 4.0,
+                2.0,
+                ctx.colors.fg_0.with_alpha(0.5),
+            );
         }
 
-        draw_circle_lines(x, y, CLOCK_RADIUS, 1.0, ctx.fg_color);
-        draw_circle(x, y, CLOCK_RADIUS, ctx.bg_color);
+        draw_circle_lines(x, y, CLOCK_RADIUS, 1.0, ctx.colors.fg_0);
+        draw_circle(x, y, CLOCK_RADIUS, ctx.colors.bg_1);
 
         draw_arc(
             x,
@@ -99,7 +104,7 @@ impl Device for Clock {
             360.0 * (self.cycle_position - self.gate) - 90.0,
             CLOCK_RADIUS,
             360.0 * self.gate,
-            ctx.fg_color,
+            ctx.colors.fg_0,
         );
     }
 

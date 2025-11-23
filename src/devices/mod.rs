@@ -1,13 +1,13 @@
 use egui::Ui;
 use macroquad::prelude::Vec2;
 
-use crate::session::{DrawContext, UpdateContext};
+use crate::{app::DrawContext, session::UpdateContext};
 
 pub mod clock;
 pub mod gate;
+pub mod latch;
 pub mod note;
 pub mod trigger;
-pub mod latch;
 
 const CLOCK_RADIUS: f32 = 12.0;
 const GATE_WIDTH: f32 = 24.0;
