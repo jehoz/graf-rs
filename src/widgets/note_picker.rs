@@ -1,7 +1,4 @@
-use egui::{
-    style::WidgetVisuals, Align2, FontId, Pos2, Rect, Response, Sense, Shape, Stroke, StrokeKind,
-    Vec2, Widget,
-};
+use egui::{Align2, FontId, Pos2, Rect, Response, Sense, Shape, StrokeKind, Vec2, Widget};
 
 use crate::devices::note::PitchClass;
 
@@ -10,7 +7,6 @@ pub struct NotePicker<'a> {
 
     width: f32,
     height: f32,
-    key_corner_radius: f32,
 }
 
 const WHITE_KEYS: [PitchClass; 7] = [
@@ -37,34 +33,30 @@ impl<'a> NotePicker<'a> {
             note: var,
             width: 200.0,
             height: 80.0,
-            key_corner_radius: 2.0,
         }
     }
 
     fn draw_key(&self, ui: &mut egui::Ui, response: &Response, key: &PitchClass, rect: Rect) {
         let visuals = if *self.note == *key {
             ui.visuals().widgets.active
-        // } else if let Some(pos) = response.hover_pos() {
-        //     if rect.contains(pos) {
-        //         ui.visuals().widgets.hovered
-        //     } else {
-        //         ui.visuals().widgets.inactive
-        //     }
-        } else {
-            WidgetVisuals {
-                bg_stroke: Stroke::new(1.0, ui.visuals().window_fill),
-                ..ui.visuals().widgets.inactive
+        } else if let Some(pos) = response.hover_pos() {
+            if rect.contains(pos) {
+                ui.visuals().widgets.hovered
+            } else {
+                ui.visuals().widgets.inactive
             }
+        } else {
+            ui.visuals().widgets.inactive
         };
 
         ui.painter().add(Shape::rect_filled(
-            rect,
-            self.key_corner_radius,
+            rect.shrink(1.0),
+            visuals.corner_radius,
             visuals.bg_fill,
         ));
         ui.painter().add(Shape::rect_stroke(
-            rect,
-            self.key_corner_radius,
+            rect.shrink(1.0),
+            visuals.corner_radius,
             visuals.bg_stroke,
             StrokeKind::Inside,
         ));
@@ -92,9 +84,9 @@ impl<'a> Widget for NotePicker<'a> {
                 let key_rect = Rect::from_center_size(
                     Pos2::new(
                         response.rect.left() + (i as f32 + 0.5) * key_width,
-                        response.rect.center().y,
+                        response.rect.center().y + response.rect.height() * 0.25,
                     ),
-                    Vec2::new(key_width, response.rect.height()),
+                    Vec2::new(key_width, response.rect.height() * 0.5),
                 );
 
                 self.draw_key(ui, &response, key, key_rect);
@@ -111,11 +103,9 @@ impl<'a> Widget for NotePicker<'a> {
                 let key_rect = Rect::from_center_size(
                     Pos2::new(
                         response.rect.left() + (i as f32 + 1.0) * key_width,
-                        // response.rect.center().y - (response.rect.height() * 0.25 * 0.67),
-                        response.rect.center().y - (response.rect.height() * 0.25 * 0.5),
+                        response.rect.center().y - (response.rect.height() * 0.25),
                     ),
-                    // Vec2::new(key_width * 0.75, response.rect.height() * 0.67),
-                    Vec2::new(key_width * 0.75, response.rect.height() * 0.5),
+                    Vec2::new(key_width, response.rect.height() * 0.5),
                 );
 
                 self.draw_key(ui, &response, key, key_rect);
@@ -130,9 +120,9 @@ impl<'a> Widget for NotePicker<'a> {
                 let key_rect = Rect::from_center_size(
                     Pos2::new(
                         response.rect.left() + (i as f32 + 4.0) * key_width,
-                        response.rect.center().y - (response.rect.height() * 0.25 * 0.67),
+                        response.rect.center().y - (response.rect.height() * 0.25),
                     ),
-                    Vec2::new(key_width * 0.75, response.rect.height() * 0.67),
+                    Vec2::new(key_width, response.rect.height() * 0.5),
                 );
 
                 self.draw_key(ui, &response, key, key_rect);
