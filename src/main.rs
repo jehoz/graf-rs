@@ -1,5 +1,4 @@
 use app::App;
-use egui::CornerRadius;
 use macroquad::prelude::*;
 
 use crate::drawing_utils::ColorPalette;
@@ -24,14 +23,14 @@ fn window_conf() -> Conf {
 async fn main() {
     let colors = ColorPalette {
         fg_0: Color::from_hex(0xFFFFFF),
-        fg_1: Color::from_hex(0xF4F2F5),
-        fg_2: Color::from_hex(0xE8E4EB),
-        fg_3: Color::from_hex(0xD7D0DB),
+        fg_1: Color::from_hex(0xE8E8E8),
+        fg_2: Color::from_hex(0xB7B7B7),
+        fg_3: Color::from_hex(0x8C8C8C),
 
-        bg_0: Color::from_hex(0x201B24),
-        bg_1: Color::from_hex(0x332B38),
-        bg_2: Color::from_hex(0x453B4D),
-        bg_3: Color::from_hex(0x53475C),
+        bg_0: Color::from_hex(0x000000),
+        bg_1: Color::from_hex(0x111111),
+        bg_2: Color::from_hex(0x212121),
+        bg_3: Color::from_hex(0x3C3C3C),
 
         error: Color::from_hex(0xF21B1B),
     };
