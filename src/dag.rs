@@ -6,7 +6,18 @@ use std::{
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
 pub struct DeviceId(u32);
 
-pub type Edge = (DeviceId, DeviceId);
+#[derive(PartialEq, Eq, Clone, Copy, Hash)]
+pub enum EdgeType {
+    Normal,
+    Negated,
+}
+
+#[derive(PartialEq, Eq, Clone, Copy, Hash)]
+pub struct Edge {
+    pub from: DeviceId,
+    pub to: DeviceId,
+    pub edge_type: EdgeType,
+}
 
 pub struct IllegalEdgeError;
 
@@ -36,27 +47,35 @@ impl Dag {
     }
 
     pub fn parents(&self, child: DeviceId) -> impl Iterator<Item = &DeviceId> {
-        self.edges.iter().filter_map(
-            move |(from, to)| {
-                if *to == child {
-                    Some(from)
-                } else {
-                    None
-                }
-            },
-        )
+        self.edges.iter().filter_map(move |edge| {
+            if edge.to == child {
+                Some(&edge.from)
+            } else {
+                None
+            }
+        })
     }
 
     pub fn contains_vertex(&self, v: DeviceId) -> bool {
         self.topological_order.contains(&v)
     }
 
-    pub fn contains_edge(&self, e: Edge) -> bool {
-        self.edges.contains(&e)
+    pub fn contains_edge(&self, from: DeviceId, to: DeviceId) -> bool {
+        for edge in self.edges.iter() {
+            if edge.from == from && edge.to == to {
+                return true;
+            }
+        }
+        false
     }
 
     pub fn is_reachable(&self, from: DeviceId, to: DeviceId) -> bool {
-        self.transitive_closure.contains(&(from, to))
+        for edge in self.transitive_closure.iter() {
+            if edge.from == from && edge.to == to {
+                return true;
+            }
+        }
+        false
     }
 
     pub fn add_vertex(&mut self) -> DeviceId {
@@ -69,15 +88,23 @@ impl Dag {
         id
     }
 
-    pub fn add_edge(&mut self, e: Edge) -> Result<(), IllegalEdgeError> {
-        let (from, to) = e;
-
-        if self.contains_edge(e) {
+    pub fn add_edge(
+        &mut self,
+        from: DeviceId,
+        to: DeviceId,
+        edge_type: EdgeType,
+    ) -> Result<(), IllegalEdgeError> {
+        if self.contains_edge(from, to) {
             Ok(())
         } else if self.is_reachable(to, from) {
             // edge would create cycle
             Err(IllegalEdgeError)
         } else if self.contains_vertex(from) && self.contains_vertex(to) {
+            let e = Edge {
+                from,
+                to,
+                edge_type,
+            };
             self.edges.push(e);
             self.recompute_caches();
             Ok(())
@@ -88,14 +115,14 @@ impl Dag {
     }
 
     pub fn remove_vertex(&mut self, v: DeviceId) {
-        self.edges.retain(|(from, to)| *from != v && *to != v);
+        self.edges.retain(|e| e.from != v && e.to != v);
         self.topological_order.retain(|x| *x != v);
 
         self.recompute_caches();
     }
 
-    pub fn remove_edge(&mut self, e: Edge) {
-        self.edges.retain(|x| *x != e);
+    pub fn remove_edge(&mut self, from: DeviceId, to: DeviceId) {
+        self.edges.retain(|x| x.from != from || x.to != to);
 
         self.recompute_caches();
     }
@@ -123,9 +150,12 @@ impl Dag {
             closure.get_mut(v).unwrap().insert(*v);
             let v_reachable = closure[v].clone();
 
-            for (from, to) in self.edges.iter() {
-                if *v == *to {
-                    closure.get_mut(&from).unwrap().extend(v_reachable.clone());
+            for edge in self.edges.iter() {
+                if *v == edge.to {
+                    closure
+                        .get_mut(&edge.from)
+                        .unwrap()
+                        .extend(v_reachable.clone());
                 }
             }
         }
@@ -133,7 +163,13 @@ impl Dag {
         // convert from adjacency map to edge list
         self.transitive_closure = closure
             .iter()
-            .flat_map(|(v, ws)| ws.iter().map(|w| (*v, *w)))
+            .flat_map(|(v, ws)| {
+                ws.iter().map(|w| Edge {
+                    from: *v,
+                    to: *w,
+                    edge_type: EdgeType::Normal,
+                })
+            })
             .collect();
     }
 
@@ -143,8 +179,8 @@ impl Dag {
         for vid in self.topological_order.iter() {
             incoming.insert(vid.to_owned(), 0);
         }
-        for (_from, to) in self.edges.iter() {
-            *incoming.get_mut(to).unwrap() += 1;
+        for edge in self.edges.iter() {
+            *incoming.get_mut(&edge.to).unwrap() += 1;
         }
 
         // maintain set of all vertices with no incoming edges (source vertices)
@@ -165,12 +201,12 @@ impl Dag {
             topo.push(v);
 
             // remove outgoing edges from that vertex, and add any new sources
-            for (from, to) in self.edges.iter() {
-                if *from == v {
-                    *incoming.get_mut(to).unwrap() -= 1;
+            for edge in self.edges.iter() {
+                if edge.from == v {
+                    *incoming.get_mut(&edge.to).unwrap() -= 1;
 
-                    if incoming[to] == 0 {
-                        sources.insert(to.to_owned());
+                    if incoming[&edge.to] == 0 {
+                        sources.insert(edge.to);
                     }
                 }
             }

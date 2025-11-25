@@ -8,7 +8,7 @@ use macroquad::math::{Rect, Vec2};
 
 use crate::{
     app::DrawContext,
-    dag::{self, Dag, DeviceId, Edge},
+    dag::{self, Dag, DeviceId, Edge, EdgeType},
     devices::{Arity, Device},
     drawing_utils::draw_wire_between_devices,
 };
@@ -71,15 +71,15 @@ impl Session {
         id
     }
 
-    pub fn connect_devices(&mut self, from: DeviceId, to: DeviceId) {
+    pub fn connect_devices(&mut self, from: DeviceId, to: DeviceId, edge_type: EdgeType) {
         // just silently ignore any errors for now
-        if let Err(dag::IllegalEdgeError) = self.circuit.add_edge((from, to)) {
+        if let Err(dag::IllegalEdgeError) = self.circuit.add_edge(from, to, edge_type) {
             print!("Got IllegalEdgeError when trying to connected devices!!!");
         }
     }
 
     pub fn disconnect_devices(&mut self, from: DeviceId, to: DeviceId) {
-        self.circuit.remove_edge((from, to))
+        self.circuit.remove_edge(from, to)
     }
 
     pub fn get_device_at(&self, position: Vec2) -> Option<DeviceId> {
@@ -94,9 +94,9 @@ impl Session {
     pub fn get_wire_at(&self, position: Vec2) -> Option<Edge> {
         const WIRE_CLICKABLE_DISTANCE: f32 = 5.0;
 
-        for (from_id, to_id) in self.circuit.edges() {
-            let u = self.device_position(*from_id).unwrap();
-            let v = self.device_position(*to_id).unwrap();
+        for edge in self.circuit.edges() {
+            let u = self.device_position(edge.from).unwrap();
+            let v = self.device_position(edge.to).unwrap();
 
             let len2 = u.distance_squared(v);
 
@@ -108,7 +108,7 @@ impl Session {
             let point_on_line = u + t * (v - u);
 
             if position.distance(point_on_line) < WIRE_CLICKABLE_DISTANCE {
-                return Some((*from_id, *to_id));
+                return Some(*edge);
             }
         }
 
@@ -207,9 +207,9 @@ impl Session {
         }
 
         let mut edges = Vec::new();
-        for (from, to) in self.circuit.edges() {
-            if devices.contains_key(from) && devices.contains_key(to) {
-                edges.push((*from, *to));
+        for edge in self.circuit.edges() {
+            if devices.contains_key(&edge.from) && devices.contains_key(&edge.to) {
+                edges.push(*edge);
             }
         }
 
@@ -232,10 +232,10 @@ impl Session {
             dev_id_map.insert(old_id, new_id);
         }
 
-        for (old_from, old_to) in edges.clone().iter() {
-            let from = dev_id_map.get(old_from).unwrap();
-            let to = dev_id_map.get(old_to).unwrap();
-            self.connect_devices(*from, *to);
+        for edge in edges.clone().iter() {
+            let from = dev_id_map.get(&edge.from).unwrap();
+            let to = dev_id_map.get(&edge.to).unwrap();
+            self.connect_devices(*from, *to, edge.edge_type);
         }
 
         self.clear_selection();
@@ -287,9 +287,9 @@ impl Session {
     }
 
     pub fn draw(&self, draw_ctx: &DrawContext) {
-        for (from_id, to_id) in self.circuit.edges() {
-            let from_dev = self.devices.get(&from_id).unwrap();
-            let to_dev = self.devices.get(&to_id).unwrap();
+        for edge in self.circuit.edges() {
+            let from_dev = self.devices.get(&edge.from).unwrap();
+            let to_dev = self.devices.get(&edge.to).unwrap();
             draw_wire_between_devices(
                 draw_ctx,
                 from_dev.as_ref(),

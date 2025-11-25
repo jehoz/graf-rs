@@ -12,7 +12,7 @@ use macroquad::{
 };
 
 use crate::{
-    dag::DeviceId,
+    dag::{DeviceId, Edge, EdgeType},
     devices::{clock::Clock, gate::Gate, latch::Latch, note::Note, trigger::Trigger},
     drawing_utils::{
         color_to_color32, draw_wire_between_devices, draw_wire_from_device, ColorPalette,
@@ -24,9 +24,9 @@ use crate::{
 enum CursorState {
     Idle,
     DraggingSelectedDevices(Vec2),
-    DraggingLooseWire(DeviceId),
-    DraggingConnectedWire(DeviceId, DeviceId),
-    DraggingInvalidWire(DeviceId),
+    DraggingLooseWire(DeviceId, EdgeType),
+    DraggingConnectedWire(DeviceId, DeviceId, EdgeType),
+    DraggingInvalidWire(DeviceId, EdgeType),
     DraggingSelectBox(Vec2),
     PanningViewport(Vec2),
 }
@@ -165,7 +165,7 @@ impl App {
                         }
 
                         if is_mouse_button_pressed(MouseButton::Right) {
-                            self.cursor = CursorState::DraggingLooseWire(id);
+                            self.cursor = CursorState::DraggingLooseWire(id, EdgeType::Normal);
                         }
                     }
                     None => {
@@ -175,9 +175,10 @@ impl App {
                                 .get_wire_at(self.draw_ctx.viewport_to_world(m_pos));
 
                             match wire_under_mouse {
-                                Some((from_id, to_id)) => {
-                                    self.session.disconnect_devices(from_id, to_id);
-                                    self.cursor = CursorState::DraggingLooseWire(from_id);
+                                Some(edge) => {
+                                    self.session.disconnect_devices(edge.from, edge.to);
+                                    self.cursor =
+                                        CursorState::DraggingLooseWire(edge.from, edge.edge_type);
                                 }
                                 None => {
                                     self.context_menu = Some(m_pos);
@@ -201,45 +202,46 @@ impl App {
                 }
             }
 
-            CursorState::DraggingLooseWire(from_id) => {
+            CursorState::DraggingLooseWire(from_id, edge_type) => {
                 if is_mouse_button_released(MouseButton::Right) {
                     self.cursor = CursorState::Idle;
                 } else if let Some(to_id) = device_under_mouse {
                     if self.session.can_connect(from_id, to_id) {
-                        self.cursor = CursorState::DraggingConnectedWire(from_id, to_id);
+                        self.cursor = CursorState::DraggingConnectedWire(from_id, to_id, edge_type);
                     } else {
-                        self.cursor = CursorState::DraggingInvalidWire(from_id);
+                        self.cursor = CursorState::DraggingInvalidWire(from_id, edge_type);
                     }
                 }
             }
 
-            CursorState::DraggingConnectedWire(from_id, to_id) => {
+            CursorState::DraggingConnectedWire(from_id, to_id, edge_type) => {
                 if is_mouse_button_released(MouseButton::Right) {
-                    self.session.connect_devices(from_id, to_id);
+                    self.session.connect_devices(from_id, to_id, edge_type);
                     self.cursor = CursorState::Idle;
                 } else {
                     match device_under_mouse {
                         Some(to_id) => {
                             if !self.session.can_connect(from_id, to_id) {
-                                self.cursor = CursorState::DraggingInvalidWire(from_id);
+                                self.cursor = CursorState::DraggingInvalidWire(from_id, edge_type);
                             }
                         }
-                        None => self.cursor = CursorState::DraggingLooseWire(from_id),
+                        None => self.cursor = CursorState::DraggingLooseWire(from_id, edge_type),
                     }
                 }
             }
 
-            CursorState::DraggingInvalidWire(from_id) => {
+            CursorState::DraggingInvalidWire(from_id, edge_type) => {
                 if is_mouse_button_released(MouseButton::Right) {
                     self.cursor = CursorState::Idle;
                 } else {
                     match device_under_mouse {
                         Some(to_id) => {
                             if self.session.can_connect(from_id, to_id) {
-                                self.cursor = CursorState::DraggingConnectedWire(from_id, to_id);
+                                self.cursor =
+                                    CursorState::DraggingConnectedWire(from_id, to_id, edge_type);
                             }
                         }
-                        None => self.cursor = CursorState::DraggingLooseWire(from_id),
+                        None => self.cursor = CursorState::DraggingLooseWire(from_id, edge_type),
                     }
                 }
             }
@@ -413,7 +415,7 @@ impl App {
             | CursorState::DraggingSelectedDevices(_)
             | CursorState::PanningViewport(_) => {}
 
-            CursorState::DraggingLooseWire(from_id) => {
+            CursorState::DraggingLooseWire(from_id, edge_type) => {
                 let from_dev = self.session.devices.get(&from_id).unwrap();
                 draw_wire_from_device(
                     &self.draw_ctx,
@@ -422,7 +424,7 @@ impl App {
                     self.draw_ctx.colors.fg_2,
                 );
             }
-            CursorState::DraggingConnectedWire(from_id, to_id) => {
+            CursorState::DraggingConnectedWire(from_id, to_id, edge_type) => {
                 let from_dev = self.session.devices.get(&from_id).unwrap();
                 let to_dev = self.session.devices.get(&to_id).unwrap();
                 draw_wire_between_devices(
@@ -432,7 +434,7 @@ impl App {
                     self.draw_ctx.colors.fg_0,
                 );
             }
-            CursorState::DraggingInvalidWire(from_id) => {
+            CursorState::DraggingInvalidWire(from_id, edge_type) => {
                 let from_dev = self.session.devices.get(&from_id).unwrap();
                 draw_wire_from_device(
                     &self.draw_ctx,
