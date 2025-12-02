@@ -62,25 +62,23 @@ impl Device for Latch {
     fn draw(&self, ctx: &DrawContext, is_selected: bool) {
         let Vec2 { x, y } = ctx.world_to_viewport(self.position);
 
-        let angle = 90.0;
-
         if is_selected {
             draw_poly_lines(
                 x,
                 y,
                 3,
                 LATCH_RADIUS + 4.0,
-                angle,
+                -90.0,
                 2.0,
                 ctx.colors.fg_0.with_alpha(0.5),
             );
         }
 
-        draw_poly_lines(x, y, 3, LATCH_RADIUS, angle, 2.0, ctx.colors.fg_0);
-        draw_poly(x, y, 3, LATCH_RADIUS, angle, ctx.colors.bg_1);
+        draw_poly_lines(x, y, 3, LATCH_RADIUS, -90.0, 2.0, ctx.colors.fg_0);
+        draw_poly(x, y, 3, LATCH_RADIUS, -90.0, ctx.colors.bg_1);
 
         if self.is_on {
-            draw_poly(x, y, 3, LATCH_RADIUS / 2.0, angle, ctx.colors.fg_0);
+            draw_poly(x, y, 3, LATCH_RADIUS / 2.0, -90.0, ctx.colors.fg_0);
         }
     }
 

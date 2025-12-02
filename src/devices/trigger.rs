@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use macroquad::{
     math::Vec2,
-    shapes::{draw_circle, draw_circle_lines},
+    shapes::{draw_circle, draw_circle_lines, draw_poly, draw_poly_lines},
 };
 
 use egui::{FontId, RichText, Slider};
@@ -103,21 +103,30 @@ impl Device for Trigger {
         let Vec2 { x, y } = ctx.world_to_viewport(self.position);
 
         if is_selected {
-            draw_circle_lines(
+            draw_poly_lines(
                 x,
                 y,
+                3,
                 TRIGGER_RADIUS + 4.0,
+                90.0,
                 2.0,
                 ctx.colors.fg_0.with_alpha(0.5),
             );
         }
 
-        draw_circle_lines(x, y, TRIGGER_RADIUS, 1.0, ctx.colors.fg_0);
-        draw_circle(x, y, TRIGGER_RADIUS, ctx.colors.bg_1);
+        draw_poly_lines(x, y, 3, TRIGGER_RADIUS, 90.0, 2.0, ctx.colors.fg_0);
+        draw_poly(x, y, 3, TRIGGER_RADIUS, 90.0, ctx.colors.bg_1);
 
         if let Some(t_rem) = self.time_remaining {
             let percent_done = (t_rem / self.duration).clamp(0.0, 1.0);
-            draw_circle(x, y, TRIGGER_RADIUS * percent_done, ctx.colors.fg_0);
+            draw_poly(
+                x,
+                y,
+                3,
+                TRIGGER_RADIUS * percent_done,
+                90.0,
+                ctx.colors.fg_0,
+            );
         }
     }
 
