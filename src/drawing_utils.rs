@@ -24,51 +24,46 @@ pub fn color_to_color32(c: Color) -> Color32 {
     Color32::from_rgb(r, g, b)
 }
 
-type Path = Vec<Vec2>;
+pub fn draw_line_v(from: Vec2, to: Vec2, thickness: f32, color: Color) {
+    draw_line(from.x, from.y, to.x, to.y, thickness, color)
+}
 
-/// Computes a path between two points using at-most three straight lines which
-/// are horizontal, vertical, or at a 45-degree angle.
-pub fn three_segment_path(from: Vec2, to: Vec2) -> Path {
-    let delta = to - from;
-    if delta.x.abs() > delta.y.abs() {
-        let span = delta.x.signum() * (delta.x.abs() - delta.y.abs()) / 2.0;
-        vec![
-            from,
-            vec2(from.x + span, from.y),
-            vec2(to.x - span, to.y),
-            to,
-        ]
-    } else {
-        let span = delta.y.signum() * (delta.y.abs() - delta.x.abs()) / 2.0;
-        vec![
-            from,
-            vec2(from.x, from.y + span),
-            vec2(to.x, to.y - span),
-            to,
-        ]
+pub fn draw_dashed_line(from: Vec2, to: Vec2, color: Color, dash_size: f32) {
+    let length = (to - from).length();
+    let num_segments = (length / dash_size).ceil() as i32;
+    let dx = (to - from).x / num_segments as f32;
+    let dy = (to - from).y / num_segments as f32;
+    let mut prev_x = from.x;
+    let mut prev_y = from.y;
+    for _ in 0..num_segments {
+        let x = prev_x + dx / 2.0;
+        let y = prev_y + dy / 2.0;
+        draw_line(prev_x, prev_y, x, y, 1.0, color);
+        prev_x += dx;
+        prev_y += dy;
     }
 }
 
-pub fn draw_line_path(path: Path, thickness: f32, color: Color) {
-    for (from, to) in path.iter().zip(path.iter().skip(1)) {
-        draw_line(from.x, from.y, to.x, to.y, thickness, color);
-    }
-}
+pub fn draw_arrow(from: Vec2, to: Vec2, thickness: f32, head_size: f32, color: Color) {
+    let rotation = vec2(1.0, 0.0).angle_between(to - from).to_degrees();
+    let arrow_pos = to - (to - from).normalize() * head_size;
 
-pub fn draw_arrow_path(path: Path, thickness: f32, head_size: f32, color: Color) {
-    draw_line_path(path.clone(), thickness, color);
-
-    let p1 = path.last().unwrap();
-    let p0 = path.iter().rev().skip(1).next().unwrap();
-    let rotation = vec2(1.0, 0.0).angle_between(*p1 - *p0).to_degrees();
-
-    let arrow_pos = *p1 - (*p1 - *p0).normalize() * head_size;
+    draw_line_v(from, arrow_pos, thickness, color);
     draw_poly(arrow_pos.x, arrow_pos.y, 3, head_size, rotation, color);
+
+    draw_line_v(from, arrow_pos, 1.5, macroquad::color::BLACK);
+    draw_poly(
+        arrow_pos.x,
+        arrow_pos.y,
+        3,
+        head_size - 1.5,
+        rotation,
+        macroquad::color::BLACK,
+    );
 }
 
 pub fn draw_wire(from: Vec2, to: Vec2, color: Color) {
-    let path = vec![from, to];
-    draw_arrow_path(path, 1.0, 6.0, color);
+    draw_arrow(from, to, 3.0, 6.0, color);
 }
 
 pub fn draw_wire_from_device<D: Device + ?Sized>(
