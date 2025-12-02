@@ -5,7 +5,7 @@ use macroquad::{
     shapes::{draw_circle, draw_circle_lines, draw_poly, draw_poly_lines},
 };
 
-use egui::{FontId, RichText, Slider};
+use egui::{DragValue, FontId, RichText, Slider};
 
 use crate::session::UpdateContext;
 use crate::{
@@ -19,6 +19,9 @@ pub struct Trigger {
 
     // duration in milliseconds that trigger will stay on after being set off
     duration: f32,
+
+    bpm_sync: bool,
+    bpm_duration: (u32, u32),
 
     // can the trigger be set off again before finishing?
     retrigger_mode: bool,
@@ -34,7 +37,9 @@ impl Trigger {
         Trigger {
             position,
             duration: 500.0,
-            retrigger_mode: true,
+            bpm_sync: false,
+            bpm_duration: (1, 4),
+            retrigger_mode: false,
 
             ready_to_fire: true,
             time_remaining: None,
@@ -43,9 +48,18 @@ impl Trigger {
         }
     }
 
-    fn fire(&mut self) {
+    fn fire(&mut self, ctx: &UpdateContext) {
+        let duration = if self.bpm_sync {
+            let (numerator, denominator) = self.bpm_duration;
+            let beats = (numerator as f32 / denominator as f32) * 4.0;
+            let ms_per_beat = 60000.0 / ctx.bpm as f32;
+            beats * ms_per_beat
+        } else {
+            self.duration
+        };
+
         self.ready_to_fire = false;
-        self.time_remaining = Some(self.duration);
+        self.time_remaining = Some(duration);
     }
 }
 
@@ -71,11 +85,11 @@ impl Device for Trigger {
         let input_on = inputs.first().map(|x| *x).unwrap_or(false);
         if self.retrigger_mode {
             if input_on && self.ready_to_fire {
-                self.fire();
+                self.fire(ctx);
             }
         } else {
             if input_on && self.ready_to_fire && self.time_remaining == None {
-                self.fire();
+                self.fire(ctx);
             }
         }
 
@@ -147,11 +161,22 @@ impl Device for Trigger {
 
         ui.checkbox(&mut self.retrigger_mode, "Retrigger Mode");
 
-        ui.add(
-            Slider::new(&mut self.duration, 1f32..=10000f32)
-                .text("Duration")
-                .suffix("ms"),
-        );
+        ui.checkbox(&mut self.bpm_sync, "BPM Sync");
+        if self.bpm_sync {
+            let (n, d) = &mut self.bpm_duration;
+            ui.horizontal(|ui| {
+                ui.label("Note Length");
+                ui.add(DragValue::new(n).range(1..=256));
+                ui.label("/");
+                ui.add(DragValue::new(d).range(1..=256));
+            });
+        } else {
+            ui.add(
+                Slider::new(&mut self.duration, 1f32..=10000f32)
+                    .text("Duration")
+                    .suffix("ms"),
+            );
+        }
     }
 
     fn input_arity(&self) -> super::Arity {
