@@ -7,62 +7,62 @@ use std::{
 pub struct DeviceId(u32);
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
-pub enum EdgeType {
+pub enum WireType {
     Normal,
     Negated,
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
-pub struct Edge {
+pub struct Wire {
     pub from: DeviceId,
     pub to: DeviceId,
-    pub edge_type: EdgeType,
+    pub wire_type: WireType,
 }
 
-pub struct IllegalEdgeError;
+pub struct IllegalWireError;
 
 pub struct Dag {
     id_counter: u32,
-    edges: Vec<Edge>,
+    wires: Vec<Wire>,
     topological_order: Vec<DeviceId>,
-    transitive_closure: Vec<Edge>,
+    transitive_closure: Vec<(DeviceId, DeviceId)>,
 }
 
 impl Dag {
     pub fn new() -> Self {
         Dag {
             id_counter: 0,
-            edges: Vec::new(),
+            wires: Vec::new(),
             transitive_closure: Vec::new(),
             topological_order: Vec::new(),
         }
     }
 
-    pub fn vertices(&self) -> impl Iterator<Item = &DeviceId> {
+    pub fn devices(&self) -> impl Iterator<Item = &DeviceId> {
         self.topological_order.iter()
     }
 
-    pub fn edges(&self) -> impl Iterator<Item = &Edge> {
-        self.edges.iter()
+    pub fn wires(&self) -> impl Iterator<Item = &Wire> {
+        self.wires.iter()
     }
 
     pub fn parents(&self, child: DeviceId) -> impl Iterator<Item = &DeviceId> {
-        self.edges.iter().filter_map(move |edge| {
-            if edge.to == child {
-                Some(&edge.from)
+        self.wires.iter().filter_map(move |wire| {
+            if wire.to == child {
+                Some(&wire.from)
             } else {
                 None
             }
         })
     }
 
-    pub fn contains_vertex(&self, v: DeviceId) -> bool {
-        self.topological_order.contains(&v)
+    pub fn contains_device(&self, d: DeviceId) -> bool {
+        self.topological_order.contains(&d)
     }
 
-    pub fn contains_edge(&self, from: DeviceId, to: DeviceId) -> bool {
-        for edge in self.edges.iter() {
-            if edge.from == from && edge.to == to {
+    pub fn contains_wire(&self, from: DeviceId, to: DeviceId) -> bool {
+        for wire in self.wires.iter() {
+            if wire.from == from && wire.to == to {
                 return true;
             }
         }
@@ -70,15 +70,15 @@ impl Dag {
     }
 
     pub fn is_reachable(&self, from: DeviceId, to: DeviceId) -> bool {
-        for edge in self.transitive_closure.iter() {
-            if edge.from == from && edge.to == to {
+        for (tc_from, tc_to) in self.transitive_closure.iter() {
+            if *tc_from == from && *tc_to == to {
                 return true;
             }
         }
         false
     }
 
-    pub fn add_vertex(&mut self) -> DeviceId {
+    pub fn add_device(&mut self) -> DeviceId {
         let id = DeviceId(self.id_counter);
         self.id_counter += 1;
 
@@ -88,41 +88,41 @@ impl Dag {
         id
     }
 
-    pub fn add_edge(
+    pub fn add_wire(
         &mut self,
         from: DeviceId,
         to: DeviceId,
-        edge_type: EdgeType,
-    ) -> Result<(), IllegalEdgeError> {
-        if self.contains_edge(from, to) {
+        edge_type: WireType,
+    ) -> Result<(), IllegalWireError> {
+        if self.contains_wire(from, to) {
             Ok(())
         } else if self.is_reachable(to, from) {
             // edge would create cycle
-            Err(IllegalEdgeError)
-        } else if self.contains_vertex(from) && self.contains_vertex(to) {
-            let e = Edge {
+            Err(IllegalWireError)
+        } else if self.contains_device(from) && self.contains_device(to) {
+            let e = Wire {
                 from,
                 to,
-                edge_type,
+                wire_type: edge_type,
             };
-            self.edges.push(e);
+            self.wires.push(e);
             self.recompute_caches();
             Ok(())
         } else {
             // edge includes nonexistent vertices
-            Err(IllegalEdgeError)
+            Err(IllegalWireError)
         }
     }
 
-    pub fn remove_vertex(&mut self, v: DeviceId) {
-        self.edges.retain(|e| e.from != v && e.to != v);
-        self.topological_order.retain(|x| *x != v);
+    pub fn remove_device(&mut self, d: DeviceId) {
+        self.wires.retain(|w| w.from != d && w.to != d);
+        self.topological_order.retain(|x| *x != d);
 
         self.recompute_caches();
     }
 
-    pub fn remove_edge(&mut self, from: DeviceId, to: DeviceId) {
-        self.edges.retain(|x| x.from != from || x.to != to);
+    pub fn remove_wire(&mut self, from: DeviceId, to: DeviceId) {
+        self.wires.retain(|x| x.from != from || x.to != to);
 
         self.recompute_caches();
     }
@@ -150,7 +150,7 @@ impl Dag {
             closure.get_mut(v).unwrap().insert(*v);
             let v_reachable = closure[v].clone();
 
-            for edge in self.edges.iter() {
+            for edge in self.wires.iter() {
                 if *v == edge.to {
                     closure
                         .get_mut(&edge.from)
@@ -163,13 +163,7 @@ impl Dag {
         // convert from adjacency map to edge list
         self.transitive_closure = closure
             .iter()
-            .flat_map(|(v, ws)| {
-                ws.iter().map(|w| Edge {
-                    from: *v,
-                    to: *w,
-                    edge_type: EdgeType::Normal,
-                })
-            })
+            .flat_map(|(v, ws)| ws.iter().map(|w| (*v, *w)))
             .collect();
     }
 
@@ -179,7 +173,7 @@ impl Dag {
         for vid in self.topological_order.iter() {
             incoming.insert(vid.to_owned(), 0);
         }
-        for edge in self.edges.iter() {
+        for edge in self.wires.iter() {
             *incoming.get_mut(&edge.to).unwrap() += 1;
         }
 
@@ -201,7 +195,7 @@ impl Dag {
             topo.push(v);
 
             // remove outgoing edges from that vertex, and add any new sources
-            for edge in self.edges.iter() {
+            for edge in self.wires.iter() {
                 if edge.from == v {
                     *incoming.get_mut(&edge.to).unwrap() -= 1;
 

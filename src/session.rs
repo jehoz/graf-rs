@@ -8,7 +8,7 @@ use macroquad::math::{Rect, Vec2};
 
 use crate::{
     app::DrawContext,
-    dag::{self, Dag, DeviceId, Edge, EdgeType},
+    dag::{self, Dag, DeviceId, Wire, WireType},
     devices::{Arity, Device},
     drawing_utils::draw_wire_between_devices,
 };
@@ -46,7 +46,7 @@ pub struct Session {
     pub circuit: Dag,
 
     pub selected: Vec<DeviceId>,
-    pub clipboard: (HashMap<DeviceId, Box<dyn Device>>, Vec<Edge>),
+    pub clipboard: (HashMap<DeviceId, Box<dyn Device>>, Vec<Wire>),
 
     pub update_ctx: UpdateContext,
 }
@@ -65,21 +65,21 @@ impl Session {
     }
 
     pub fn add_device(&mut self, device: Box<dyn Device>) -> DeviceId {
-        let id = self.circuit.add_vertex();
+        let id = self.circuit.add_device();
         self.devices.insert(id, device);
         self.snap_device_to_grid(id);
         id
     }
 
-    pub fn connect_devices(&mut self, from: DeviceId, to: DeviceId, edge_type: EdgeType) {
+    pub fn connect_devices(&mut self, from: DeviceId, to: DeviceId, wire_type: WireType) {
         // just silently ignore any errors for now
-        if let Err(dag::IllegalEdgeError) = self.circuit.add_edge(from, to, edge_type) {
+        if let Err(dag::IllegalWireError) = self.circuit.add_wire(from, to, wire_type) {
             print!("Got IllegalEdgeError when trying to connected devices!!!");
         }
     }
 
     pub fn disconnect_devices(&mut self, from: DeviceId, to: DeviceId) {
-        self.circuit.remove_edge(from, to)
+        self.circuit.remove_wire(from, to)
     }
 
     pub fn get_device_at(&self, position: Vec2) -> Option<DeviceId> {
@@ -91,10 +91,10 @@ impl Session {
         None
     }
 
-    pub fn get_wire_at(&self, position: Vec2) -> Option<Edge> {
+    pub fn get_wire_at(&self, position: Vec2) -> Option<Wire> {
         const WIRE_CLICKABLE_DISTANCE: f32 = 5.0;
 
-        for edge in self.circuit.edges() {
+        for edge in self.circuit.wires() {
             let u = self.device_position(edge.from).unwrap();
             let v = self.device_position(edge.to).unwrap();
 
@@ -178,7 +178,7 @@ impl Session {
 
     pub fn delete_selected_devices(&mut self) {
         for dev_id in &self.selected {
-            self.circuit.remove_vertex(*dev_id);
+            self.circuit.remove_device(*dev_id);
             self.devices.remove(&dev_id);
         }
 
@@ -207,7 +207,7 @@ impl Session {
         }
 
         let mut edges = Vec::new();
-        for edge in self.circuit.edges() {
+        for edge in self.circuit.wires() {
             if devices.contains_key(&edge.from) && devices.contains_key(&edge.to) {
                 edges.push(*edge);
             }
@@ -235,7 +235,7 @@ impl Session {
         for edge in edges.clone().iter() {
             let from = dev_id_map.get(&edge.from).unwrap();
             let to = dev_id_map.get(&edge.to).unwrap();
-            self.connect_devices(*from, *to, edge.edge_type);
+            self.connect_devices(*from, *to, edge.wire_type);
         }
 
         self.clear_selection();
@@ -270,7 +270,7 @@ impl Session {
         }
 
         let mut device_outputs: HashMap<DeviceId, bool> = HashMap::new();
-        for dev_id in self.circuit.vertices() {
+        for dev_id in self.circuit.devices() {
             let inputs: Vec<bool> = self
                 .circuit
                 .parents(*dev_id)
@@ -287,7 +287,7 @@ impl Session {
     }
 
     pub fn draw(&self, draw_ctx: &DrawContext) {
-        for edge in self.circuit.edges() {
+        for edge in self.circuit.wires() {
             let from_dev = self.devices.get(&edge.from).unwrap();
             let to_dev = self.devices.get(&edge.to).unwrap();
             draw_wire_between_devices(
