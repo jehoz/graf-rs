@@ -119,7 +119,7 @@ impl Session {
         let to_dev = self.devices.get(&to).unwrap();
         if to_dev.input_arity() == Arity::Nullary {
             return false;
-        } else if to_dev.input_arity() == Arity::Unary && self.circuit.parents(to).count() > 0 {
+        } else if to_dev.input_arity() == Arity::Unary && self.circuit.incoming(to).count() > 0 {
             return false;
         }
 
@@ -273,8 +273,11 @@ impl Session {
         for dev_id in self.circuit.devices() {
             let inputs: Vec<bool> = self
                 .circuit
-                .parents(*dev_id)
-                .filter_map(|from_id| device_outputs.get(from_id).copied())
+                .incoming(*dev_id)
+                .filter_map(|wire| match wire.wire_type {
+                    WireType::Normal => device_outputs.get(&wire.from).copied(),
+                    WireType::Negated => device_outputs.get(&wire.from).copied().map(|x| !x),
+                })
                 .collect();
 
             let dev = self.devices.get_mut(dev_id).unwrap();
