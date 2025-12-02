@@ -5,7 +5,7 @@ use macroquad::{
     shapes::{draw_line, draw_poly},
 };
 
-use crate::{app::DrawContext, devices::Device};
+use crate::{app::DrawContext, dag::WireType, devices::Device};
 
 pub struct ColorPalette {
     pub fg_0: Color,
@@ -44,42 +44,56 @@ pub fn draw_dashed_line(from: Vec2, to: Vec2, color: Color, dash_size: f32) {
     }
 }
 
-pub fn draw_arrow(from: Vec2, to: Vec2, thickness: f32, head_size: f32, color: Color) {
+pub fn draw_arrow(
+    from: Vec2,
+    to: Vec2,
+    thickness: f32,
+    head_size: f32,
+    fill: Color,
+    outline: Option<Color>,
+) {
     let rotation = vec2(1.0, 0.0).angle_between(to - from).to_degrees();
     let arrow_pos = to - (to - from).normalize() * head_size;
 
-    draw_line_v(from, arrow_pos, thickness, color);
-    draw_poly(arrow_pos.x, arrow_pos.y, 3, head_size, rotation, color);
+    if let Some(color) = outline {
+        draw_line_v(from, arrow_pos, thickness + 1.5, color);
+        draw_poly(
+            arrow_pos.x,
+            arrow_pos.y,
+            3,
+            head_size + 2.0,
+            rotation,
+            color,
+        );
+    }
 
-    draw_line_v(from, arrow_pos, 1.5, macroquad::color::BLACK);
-    draw_poly(
-        arrow_pos.x,
-        arrow_pos.y,
-        3,
-        head_size - 1.5,
-        rotation,
-        macroquad::color::BLACK,
-    );
+    draw_line_v(from, arrow_pos, thickness, fill);
+    draw_poly(arrow_pos.x, arrow_pos.y, 3, head_size, rotation, fill);
 }
 
-pub fn draw_wire(from: Vec2, to: Vec2, color: Color) {
-    draw_arrow(from, to, 3.0, 6.0, color);
+pub fn draw_wire(from: Vec2, to: Vec2, wire_type: WireType, color: Color) {
+    match wire_type {
+        WireType::Normal => draw_arrow(from, to, 1.5, 6.0, color, None),
+        WireType::Negated => draw_arrow(from, to, 1.5, 5.0, macroquad::color::BLACK, Some(color)),
+    }
 }
 
 pub fn draw_wire_from_device<D: Device + ?Sized>(
     draw_ctx: &DrawContext,
     from_dev: &D,
     to: Vec2,
+    wire_type: WireType,
     color: Color,
 ) {
     let from_pos = from_dev.closest_border_point(draw_ctx.viewport_to_world(to), 3.0);
-    draw_wire(draw_ctx.world_to_viewport(from_pos), to, color);
+    draw_wire(draw_ctx.world_to_viewport(from_pos), to, wire_type, color);
 }
 
 pub fn draw_wire_between_devices<D: Device + ?Sized>(
     draw_ctx: &DrawContext,
     from_dev: &D,
     to_dev: &D,
+    wire_type: WireType,
     color: Color,
 ) {
     let from_pos = from_dev.closest_border_point(to_dev.get_position(), 3.0);
@@ -87,6 +101,7 @@ pub fn draw_wire_between_devices<D: Device + ?Sized>(
     draw_wire(
         draw_ctx.world_to_viewport(from_pos),
         draw_ctx.world_to_viewport(to_pos),
+        wire_type,
         color,
     );
 }

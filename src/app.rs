@@ -165,7 +165,11 @@ impl App {
                         }
 
                         if is_mouse_button_pressed(MouseButton::Right) {
-                            self.cursor = CursorState::DraggingLooseWire(id, WireType::Normal);
+                            if is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift) {
+                                self.cursor = CursorState::DraggingLooseWire(id, WireType::Negated);
+                            } else {
+                                self.cursor = CursorState::DraggingLooseWire(id, WireType::Normal);
+                            }
                         }
                     }
                     None => {
@@ -421,6 +425,7 @@ impl App {
                     &self.draw_ctx,
                     from_dev.as_ref(),
                     m_pos,
+                    wire_type,
                     self.draw_ctx.colors.fg_2,
                 );
             }
@@ -431,6 +436,7 @@ impl App {
                     &self.draw_ctx,
                     from_dev.as_ref(),
                     to_dev.as_ref(),
+                    wire_type,
                     self.draw_ctx.colors.fg_0,
                 );
             }
@@ -440,6 +446,7 @@ impl App {
                     &self.draw_ctx,
                     from_dev.as_ref(),
                     m_pos,
+                    wire_type,
                     self.draw_ctx.colors.error,
                 );
             }

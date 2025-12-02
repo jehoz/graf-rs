@@ -287,14 +287,15 @@ impl Session {
     }
 
     pub fn draw(&self, draw_ctx: &DrawContext) {
-        for edge in self.circuit.wires() {
-            let from_dev = self.devices.get(&edge.from).unwrap();
-            let to_dev = self.devices.get(&edge.to).unwrap();
+        for wire in self.circuit.wires() {
+            let from_dev = self.devices.get(&wire.from).unwrap();
+            let to_dev = self.devices.get(&wire.to).unwrap();
             draw_wire_between_devices(
                 draw_ctx,
                 from_dev.as_ref(),
                 to_dev.as_ref(),
-                draw_ctx.colors.fg_2,
+                wire.wire_type,
+                draw_ctx.colors.fg_1,
             );
         }
 
