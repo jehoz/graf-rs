@@ -46,14 +46,10 @@ impl Dag {
         self.wires.iter()
     }
 
-    pub fn parents(&self, child: DeviceId) -> impl Iterator<Item = &DeviceId> {
-        self.wires.iter().filter_map(move |wire| {
-            if wire.to == child {
-                Some(&wire.from)
-            } else {
-                None
-            }
-        })
+    pub fn incoming(&self, child: DeviceId) -> impl Iterator<Item = &Wire> {
+        self.wires
+            .iter()
+            .filter_map(move |wire| if wire.to == child { Some(wire) } else { None })
     }
 
     pub fn contains_device(&self, d: DeviceId) -> bool {
