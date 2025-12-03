@@ -1,7 +1,7 @@
 use egui::{DragValue, FontId, RichText};
 use macroquad::{
     math::Vec2,
-    shapes::{draw_circle, draw_circle_lines},
+    shapes::{draw_circle, draw_circle_lines, draw_hexagon},
 };
 
 use crate::{
@@ -161,18 +161,37 @@ impl Device for Note {
         let Vec2 { x, y } = ctx.world_to_viewport(self.position);
 
         if is_selected {
-            draw_circle_lines(
+            draw_hexagon(
                 x,
                 y,
                 NOTE_RADIUS + 4.0,
-                2.0,
-                ctx.colors.fg_0.with_alpha(0.5),
+                1.0,
+                false,
+                ctx.colors.fg_0,
+                ctx.colors.bg_0.with_alpha(0.0),
             );
         }
 
-        draw_circle_lines(x, y, NOTE_RADIUS, 1.0, ctx.colors.fg_0);
+        draw_hexagon(
+            x,
+            y,
+            NOTE_RADIUS,
+            1.0,
+            false,
+            ctx.colors.fg_0,
+            ctx.colors.bg_1,
+        );
+
         if self.is_on {
-            draw_circle(x, y, NOTE_RADIUS / 2.0, ctx.colors.fg_0);
+            draw_hexagon(
+                x,
+                y,
+                NOTE_RADIUS / 2.0,
+                0.0,
+                false,
+                ctx.colors.bg_1,
+                ctx.colors.fg_0,
+            );
         }
     }
 
