@@ -14,7 +14,7 @@ mod widgets;
 fn window_conf() -> Conf {
     Conf {
         window_title: "GRAF".to_owned(),
-        sample_count: 4,
+        sample_count: 8,
         ..Default::default()
     }
 }
@@ -23,7 +23,7 @@ fn window_conf() -> Conf {
 async fn main() {
     let colors = ColorPalette {
         fg_0: Color::from_hex(0xFFFFFF),
-        fg_1: Color::from_hex(0xE8E8E8),
+        fg_1: Color::from_hex(0xE0E0E0),
         fg_2: Color::from_hex(0xB7B7B7),
         fg_3: Color::from_hex(0x8C8C8C),
 
