@@ -90,6 +90,11 @@ impl Device for Trigger {
         } else {
             if input_on && self.ready_to_fire && self.time_remaining == None {
                 self.fire(ctx);
+                // this is certainly not the cleanest solution,  but I want to guarantee that
+                // non-retrigger-mode triggers output at least one frame of false before firing
+                // again.
+                // should probably refactor at some point
+                return Some(false);
             }
         }
 
