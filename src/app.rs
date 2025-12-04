@@ -12,7 +12,7 @@ use macroquad::{
 };
 
 use crate::{
-    dag::{DeviceId, Wire, WireType},
+    dag::{DeviceId, WireType},
     devices::{clock::Clock, gate::Gate, latch::Latch, note::Note, trigger::Trigger},
     drawing_utils::{
         color_to_color32, draw_wire_between_devices, draw_wire_from_device, ColorPalette,
@@ -165,10 +165,17 @@ impl App {
                         }
 
                         if is_mouse_button_pressed(MouseButton::Right) {
-                            if is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift) {
-                                self.cursor = CursorState::DraggingLooseWire(id, WireType::Negated);
-                            } else {
-                                self.cursor = CursorState::DraggingLooseWire(id, WireType::Normal);
+                            let dev = self.session.devices.get(&id).unwrap();
+                            if dev.has_output() {
+                                if is_key_down(KeyCode::LeftShift)
+                                    || is_key_down(KeyCode::RightShift)
+                                {
+                                    self.cursor =
+                                        CursorState::DraggingLooseWire(id, WireType::Negated);
+                                } else {
+                                    self.cursor =
+                                        CursorState::DraggingLooseWire(id, WireType::Normal);
+                                }
                             }
                         }
                     }
