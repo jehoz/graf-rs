@@ -238,6 +238,13 @@ impl Device for Note {
         }
 
         ui.add(egui::Slider::new(&mut self.velocity, 0..=127).text("Velocity"));
+
+        ui.add_space(2.0);
+
+        ui.horizontal(|ui| {
+            ui.label("MIDI Channel");
+            ui.add(DragValue::new(&mut self.midi_channel).range(0..=15));
+        });
     }
 
     fn input_arity(&self) -> Arity {
