@@ -71,37 +71,31 @@ impl Device for Gate {
         Some(out)
     }
 
-    fn draw(&self, ctx: &DrawContext, is_selected: bool) {
-        let Vec2 { x, y } = ctx.world_to_viewport(self.position);
+    fn draw(&self, ctx: &DrawContext, position: Vec2, size: f32, is_selected: bool) {
+        let Vec2 { x, y } = position;
 
         if is_selected {
             draw_rectangle_lines(
-                x - (GATE_WIDTH / 2.0 + 4.0),
-                y - (GATE_WIDTH / 2.0 + 4.0),
-                GATE_WIDTH + 8.0,
-                GATE_WIDTH + 8.0,
-                4.0,
+                x - (size / 2.0 + 4.0),
+                y - (size / 2.0 + 4.0),
+                size + 8.0,
+                size + 8.0,
+                1.0,
                 ctx.colors.fg_0.with_alpha(0.5),
             );
         }
 
-        draw_rectangle(
-            x - GATE_WIDTH / 2.,
-            y - GATE_WIDTH / 2.,
-            GATE_WIDTH,
-            GATE_WIDTH,
-            ctx.colors.bg_1,
-        );
+        draw_rectangle(x - size / 2., y - size / 2., size, size, ctx.colors.bg_1);
         draw_rectangle_lines(
-            x - GATE_WIDTH / 2.,
-            y - GATE_WIDTH / 2.,
-            GATE_WIDTH,
-            GATE_WIDTH,
-            2.0,
+            x - size / 2.,
+            y - size / 2.,
+            size,
+            size,
+            1.0,
             ctx.colors.fg_0,
         );
 
-        draw_symbol(ctx, x, y, GATE_WIDTH * 0.5, &self.operation);
+        draw_symbol(ctx, x, y, size * 0.5, &self.operation);
     }
 
     fn inspector(&mut self, ui: &mut egui::Ui) {

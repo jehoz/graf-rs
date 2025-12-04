@@ -80,21 +80,16 @@ impl Device for Clock {
         }
     }
 
-    fn draw(&self, ctx: &DrawContext, is_selected: bool) {
-        let Vec2 { x, y } = ctx.world_to_viewport(self.position);
+    fn draw(&self, ctx: &DrawContext, position: Vec2, size: f32, is_selected: bool) {
+        let radius = size / 2.0;
+        let Vec2 { x, y } = position;
 
         if is_selected {
-            draw_circle_lines(
-                x,
-                y,
-                CLOCK_RADIUS + 4.0,
-                2.0,
-                ctx.colors.fg_0.with_alpha(0.5),
-            );
+            draw_circle_lines(x, y, radius + 4.0, 1.0, ctx.colors.fg_0.with_alpha(0.5));
         }
 
-        draw_circle_lines(x, y, CLOCK_RADIUS, 1.0, ctx.colors.fg_0);
-        draw_circle(x, y, CLOCK_RADIUS, ctx.colors.bg_1);
+        draw_circle_lines(x, y, radius, 1.0, ctx.colors.fg_0);
+        draw_circle(x, y, radius, ctx.colors.bg_1);
 
         draw_arc(
             x,
@@ -102,7 +97,7 @@ impl Device for Clock {
             32,
             0.0,
             360.0 * (self.cycle_position - self.gate) - 90.0,
-            CLOCK_RADIUS,
+            radius,
             360.0 * self.gate,
             ctx.colors.fg_0,
         );

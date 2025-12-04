@@ -118,34 +118,28 @@ impl Device for Trigger {
         }
     }
 
-    fn draw(&self, ctx: &DrawContext, is_selected: bool) {
-        let Vec2 { x, y } = ctx.world_to_viewport(self.position);
+    fn draw(&self, ctx: &DrawContext, position: Vec2, size: f32, is_selected: bool) {
+        let Vec2 { x, y } = position;
+        let radius = size / 2.0;
 
         if is_selected {
             draw_poly_lines(
                 x,
                 y,
                 3,
-                TRIGGER_RADIUS + 4.0,
+                radius + 4.0,
                 90.0,
-                2.0,
+                1.0,
                 ctx.colors.fg_0.with_alpha(0.5),
             );
         }
 
-        draw_poly_lines(x, y, 3, TRIGGER_RADIUS, 90.0, 2.0, ctx.colors.fg_0);
-        draw_poly(x, y, 3, TRIGGER_RADIUS, 90.0, ctx.colors.bg_1);
+        draw_poly_lines(x, y, 3, radius, 90.0, 2.0, ctx.colors.fg_0);
+        draw_poly(x, y, 3, radius, 90.0, ctx.colors.bg_1);
 
         if let Some(t_rem) = self.time_remaining {
             let percent_done = (t_rem / self.duration).clamp(0.0, 1.0);
-            draw_poly(
-                x,
-                y,
-                3,
-                TRIGGER_RADIUS * percent_done,
-                90.0,
-                ctx.colors.fg_0,
-            );
+            draw_poly(x, y, 3, radius * percent_done, 90.0, ctx.colors.fg_0);
         }
     }
 

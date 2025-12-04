@@ -137,6 +137,12 @@ impl Session {
         }
     }
 
+    pub fn move_device_to(&mut self, device_id: DeviceId, position: Vec2) {
+        if let Some(device) = self.devices.get_mut(&device_id) {
+            device.set_position(position);
+        }
+    }
+
     pub fn snap_device_to_grid(&mut self, device_id: DeviceId) {
         if let Some(device) = self.devices.get_mut(&device_id) {
             let snapped = (device.get_position() / SNAP_GRID_SIZE).round() * SNAP_GRID_SIZE;
@@ -303,7 +309,15 @@ impl Session {
         }
 
         for (dev_id, device) in &self.devices {
-            device.draw(draw_ctx, self.selected.contains(dev_id));
+            // temporary until i move position out of device struct
+            let pos = device.get_position();
+
+            device.draw(
+                draw_ctx,
+                draw_ctx.world_to_viewport(pos),
+                24.0,
+                self.selected.contains(dev_id),
+            );
         }
     }
 }

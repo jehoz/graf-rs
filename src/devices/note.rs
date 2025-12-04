@@ -1,8 +1,5 @@
 use egui::{DragValue, FontId, RichText};
-use macroquad::{
-    math::Vec2,
-    shapes::{draw_circle, draw_circle_lines, draw_hexagon},
-};
+use macroquad::{math::Vec2, shapes::draw_hexagon};
 
 use crate::{
     app::DrawContext, midi::MidiEventSender, session::UpdateContext,
@@ -157,14 +154,15 @@ impl Device for Note {
         None
     }
 
-    fn draw(&self, ctx: &DrawContext, is_selected: bool) {
-        let Vec2 { x, y } = ctx.world_to_viewport(self.position);
+    fn draw(&self, ctx: &DrawContext, position: Vec2, size: f32, is_selected: bool) {
+        let Vec2 { x, y } = position;
+        let radius = size / 2.0;
 
         if is_selected {
             draw_hexagon(
                 x,
                 y,
-                NOTE_RADIUS + 4.0,
+                radius + 4.0,
                 1.0,
                 false,
                 ctx.colors.fg_0,
@@ -172,21 +170,13 @@ impl Device for Note {
             );
         }
 
-        draw_hexagon(
-            x,
-            y,
-            NOTE_RADIUS,
-            1.0,
-            false,
-            ctx.colors.fg_0,
-            ctx.colors.bg_1,
-        );
+        draw_hexagon(x, y, radius, 1.0, false, ctx.colors.fg_0, ctx.colors.bg_1);
 
         if self.is_on {
             draw_hexagon(
                 x,
                 y,
-                NOTE_RADIUS / 2.0,
+                radius / 2.0,
                 0.0,
                 false,
                 ctx.colors.bg_1,
